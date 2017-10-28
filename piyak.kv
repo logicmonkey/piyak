@@ -1,0 +1,76 @@
+<AppBox>:
+    orientation: 'vertical'
+    Image:
+        source: 'gerono_waikiki.png'
+    TelemetryBox:
+
+<TelemetryBox>:
+    orientation: 'horizontal'
+    GaugeBox:
+        id: i_gauge
+    DistSpeedBox:
+        id: i_distspeed
+    ElapsedBox:
+        id: i_elapsed
+
+<GaugeBox>:
+    orienation: 'horizontal'
+    Scatter:
+        size_hint: [None, None] # confine scatter to box not window
+        size: [300, 300]
+        Image:
+            size_hint: [None, None]
+            size: [300, 300]
+            source: 'lm_tacho_dial_huge.png'
+        Image:
+            size_hint: [None, None]
+            size: [300, 300]
+            source: 'lm_tacho_needle_huge.png'
+
+            canvas.before:
+                PushMatrix
+                Rotate:
+                    angle: root.angle
+                    origin: self.center
+            canvas.after:
+                PopMatrix
+
+<DistSpeedBox>:
+    orientation: 'vertical'
+    Label:
+        id: i_speed
+        text: "0 km/h"
+        font_size: 90
+        markup: True
+        color: [0, 0, 1, 1]
+    Label:
+        id: i_dist
+        text: "0 m"
+        font_size: 90
+        markup: True
+        color: [0, 1, 0, 1]
+
+<ElapsedBox>:
+    orientation: 'vertical'
+    Label:
+        id: i_elapsed
+        text: "00:00:00"
+        font_size: 90
+        color: [0.8, 0.8, 0.8, 1]
+    ButtonsBox:
+        id: i_buttons
+
+<ButtonsBox>:
+    orientation: 'horizontal'
+    Button:
+        id: i_reset
+        text: '[b]RESET[/b]'
+        markup: True
+        font_size: 20
+    PlayPauseButton:
+        id: i_playpause
+    Button:
+        text: '[b]EXIT[/b]'
+        markup: True
+        font_size: 20
+        on_press: app.stop()
