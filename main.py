@@ -13,6 +13,9 @@ from kivy.clock import Clock
 
 from datetime import datetime
 
+import random
+import math
+
 class AppBox(BoxLayout):
     pass
 
@@ -29,6 +32,9 @@ class TelemetryBox(BoxLayout):
         self.interval_start = datetime.now()
         self.elapsed = self.interval_start - self.interval_start
 
+        self.pin_eventcount = 0
+        self.pin_delta      = 0
+
     def update(self, *args):
 
         if self.ids.i_elapsed.ids.i_buttons.ids.i_reset.state == 'down':
@@ -39,6 +45,9 @@ class TelemetryBox(BoxLayout):
             self.ids.i_distspeed.ids.i_speed.text = '[b]0.0[/b] km/h'
             self.ids.i_distspeed.ids.i_dist.text  = '[b]0[/b] m'
             self.ids.i_gauge.angle                = 0.0
+
+            self.pin_eventcount = 0
+            self.pin_delta      = 0
 
         # read the play/pause button state
         #
@@ -64,10 +73,22 @@ class TelemetryBox(BoxLayout):
 
             self.ids.i_elapsed.ids.i_elapsed.text = "{:02d}:{:02d}:{:02d}".format(hour, mins, secs)
 
-            self.ids.i_distspeed.ids.i_speed.text = '[b]{0:.1f}[/b] km/h'.format(secs)
-            self.ids.i_distspeed.ids.i_dist.text  = '[b]{0:.0f}[/b] m'.format(secs)
+            self.pin_eventcount += 8./60.
+            self.pin_delta      = 100000 * math.sin(self.pin_eventcount*math.pi/180.)
 
-            self.ids.i_gauge.angle = -secs
+            # the GPIO pin timer clock is 1 MHz <=> 1 us period
+            # count hundreds of rpm, i.e. hrpm = 60*1E6/(100*delta)
+            hrpm = 600000 / self.pin_delta
+            # using 750 rpm = 11 kph as a model, kph = rpm * 11/750
+            # then kph = 60*1E6/delta * 11/750 = 880000/delta
+            kph  = 880000 / self.pin_delta        # 11 kph = 750 rpm
+            # using 60 mins * 750 rpm = 11 km, 1 rev = 11E3/(60*750) metres
+            # 1 rev = 11000/(60*750) = 11/45 = 0.244.. m
+            dist = self.pin_eventcount * 0.2444444444
+
+            self.ids.i_gauge.angle                = -22.5 * hrpm
+            self.ids.i_distspeed.ids.i_speed.text = '[b]{0:.1f}[/b] km/h'.format(kph)
+            self.ids.i_distspeed.ids.i_dist.text  = '[b]{0:.0f}[/b] m'.format(dist)
 
 class GaugeBox(BoxLayout):
     angle = NumericProperty(0)
@@ -98,3 +119,4 @@ class PiyakApp(App):
 
 if __name__ == "__main__":
     PiyakApp().run()
+    #write_activity_tcx()
