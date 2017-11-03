@@ -17,10 +17,10 @@ from datetime import datetime
 import random
 import math
 
-class AppBox(GridLayout):
+class AppGrid(GridLayout):
 
     def __init__(self, **kwargs):
-        super(AppBox, self).__init__(**kwargs)
+        super(AppGrid, self).__init__(**kwargs)
         Clock.schedule_interval(self.update, 1/60.0)
 
         self.old_play_not_pause = 0
@@ -113,7 +113,7 @@ class PlayPauseButton(ToggleButtonBehavior, Image):
 
 class PiyakApp(App):
     def build(self):
-        return AppBox()
+        return AppGrid()
 
 if __name__ == "__main__":
     PiyakApp().run()

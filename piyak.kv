@@ -1,4 +1,4 @@
-<AppBox>:
+<AppGrid>: # a grid of box layouts behaves nicely
     cols: 2
     GaugeBox:
         id: i_gauge
@@ -10,7 +10,6 @@
         id: i_elapsed
 
 <GaugeBox>:
-    orienation: 'horizontal'
     Scatter:
         size_hint: [None, None] # confine scatter to box not window
         size: [300, 300]
