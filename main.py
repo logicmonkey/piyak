@@ -1,5 +1,6 @@
 from kivy.app import App
 
+from kivy.uix.gridlayout import GridLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.image import Image
 from kivy.uix.label import Label
@@ -16,13 +17,10 @@ from datetime import datetime
 import random
 import math
 
-class AppBox(BoxLayout):
-    pass
-
-class TelemetryBox(BoxLayout):
+class AppBox(GridLayout):
 
     def __init__(self, **kwargs):
-        super(TelemetryBox, self).__init__(**kwargs)
+        super(AppBox, self).__init__(**kwargs)
         Clock.schedule_interval(self.update, 1/60.0)
 
         self.old_play_not_pause = 0
