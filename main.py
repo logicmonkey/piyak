@@ -17,6 +17,8 @@ from datetime import datetime
 import random
 import math
 
+from generate_track import generate_track
+
 class AppGrid(GridLayout):
 
     def __init__(self, **kwargs):
@@ -33,6 +35,12 @@ class AppGrid(GridLayout):
         self.pin_eventcount = 0
         self.pin_delta      = 0
 
+        # course progress tracking
+        self.track, self.lap_distance = generate_track('gerono', 'waikiki')
+        self.trackptr   = 0
+        self.lap_count  = 0
+        self.timestamps = []
+
     def update(self, *args):
 
         if self.ids.i_elapsed.ids.i_buttons.ids.i_reset.state == 'down':
@@ -43,6 +51,9 @@ class AppGrid(GridLayout):
             self.ids.i_distspeed.ids.i_speed.text = '[b]0.0[/b] km/h'
             self.ids.i_distspeed.ids.i_dist.text  = '[b]0[/b] m'
             self.ids.i_gauge.angle                = 0.0
+            self.trackptr                         = 0
+            self.lap_count                        = 0
+            self.timestamps                       = []
 
             self.pin_eventcount = 0
             self.pin_delta      = 0
@@ -65,14 +76,17 @@ class AppGrid(GridLayout):
             #
             self.old_play_not_pause = self.play_not_pause
 
-            self.elapsed += datetime.now() - self.interval_start
+            time_now = datetime.now()
+
+            self.elapsed += time_now - self.interval_start
             hour, remr = divmod(self.elapsed.seconds, 60*60)
             mins, secs = divmod(remr, 60)
 
             self.ids.i_elapsed.ids.i_elapsed.text = "{:02d}:{:02d}:{:02d}".format(hour, mins, secs)
 
-            self.pin_eventcount += 8./60.
-            self.pin_delta      = 100000 * math.sin(self.pin_eventcount*math.pi/180.)
+            # test value dummies - real pin samples need to go here
+            self.pin_eventcount += 10 #8./60.
+            self.pin_delta      = 75000
 
             # the GPIO pin timer clock is 1 MHz <=> 1 us period
             # count hundreds of rpm, i.e. hrpm = 60*1E6/(100*delta)
@@ -84,9 +98,19 @@ class AppGrid(GridLayout):
             # 1 rev = 11000/(60*750) = 11/45 = 0.244.. m
             dist = self.pin_eventcount * 0.2444444444
 
+            # update the telemetry based on the numbers
             self.ids.i_gauge.angle                = -22.5 * hrpm
             self.ids.i_distspeed.ids.i_speed.text = '[b]{0:.1f}[/b] km/h'.format(kph)
             self.ids.i_distspeed.ids.i_dist.text  = '[b]{0:.0f}[/b] m'.format(dist)
+
+            # check progress along the track (course)
+            if dist > (self.track[self.trackptr]['dist'] + self.lap_count*self.lap_distance):
+                self.timestamps.append({'time': time_now.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3], 'speed': kph, 'dist': dist})
+                # let the trackpointer roll over and update the lap count
+                self.lap_count, self.trackptr = divmod(len(self.timestamps), len(self.track))
+
+        if self.ids.i_elapsed.ids.i_buttons.ids.i_exit.state == 'down':
+            App.get_running_app().stop()
 
 class GaugeBox(BoxLayout):
     angle = NumericProperty(0)
@@ -117,4 +141,3 @@ class PiyakApp(App):
 
 if __name__ == "__main__":
     PiyakApp().run()
-    #write_activity_tcx()
