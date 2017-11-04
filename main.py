@@ -89,7 +89,7 @@ class AppGrid(GridLayout):
 
             # test value dummies - real pin samples need to go here
             self.pin_eventcount += 10 #8./60.
-            self.pin_delta      = 75000
+            self.pin_delta      = 75000 + 7500*math.sin(self.pin_eventcount/1500)
 
             # the GPIO pin timer clock is 1 MHz <=> 1 us period
             # count hundreds of rpm, i.e. hrpm = 60*1E6/(100*delta)
