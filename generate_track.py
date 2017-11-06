@@ -46,7 +46,7 @@ def generate_track(curve, location):
         lat = o['lat'] + degrees(y/R)
         lon = o['lon'] + degrees(x/(R*cos(radians(o['lat']))))
 
-        return {'lat': lat, 'lon': lon, 'x': 200.0 + 200.0 * x, 'y': 150.0 + 200.0 * y}
+        return {'lat': lat, 'lon': lon, 'x': x, 'y': y}
 
     # ------------------------------------------------------------------------------
     # generate_track

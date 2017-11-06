@@ -10,23 +10,36 @@
         id: i_elapsed
 
 <MapBox>:
-    Scatter:
-        canvas:
-            Line:
-                points: root.polyline
+    canvas:
+        Rectangle:
+            source: 'gerono_waikiki.png' # background image
+            pos: self.pos
+            size: self.size
+
+        PushMatrix
+        Translate: # position canvas origin at centre of current box
+            x: self.center[0]
+            y: self.center[1]
+        Line:      # all points are floats in the range [-1, 1] so scale up
+            points: [self.width/2.1*p for p in root.polyline]
+            width: 2.0
+        PopMatrix
 
 <GaugeBox>:
     Scatter:
+        do_translation: False
+        do_scale: False
+        do_rotation: False
         size_hint: [None, None] # confine scatter to box not window
         size: [300, 300]
         Image:
-            size_hint: [None, None]
-            size: [300, 300]
             source: 'lm_tacho_dial_huge.png'
-        Image:
             size_hint: [None, None]
             size: [300, 300]
+        Image:
             source: 'lm_tacho_needle_huge.png'
+            size_hint: [None, None]
+            size: [300, 300]
 
             canvas.before:
                 PushMatrix

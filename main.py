@@ -10,7 +10,7 @@ from kivy.uix.scatter import Scatter
 from kivy.uix.behaviors import ToggleButtonBehavior, ButtonBehavior
 from kivy.uix.button import Button
 
-from kivy.graphics.vertex_instructions import Line
+from kivy.graphics.vertex_instructions import Line, Rectangle
 
 from kivy.properties import NumericProperty, ListProperty
 
@@ -28,7 +28,7 @@ class AppGrid(GridLayout):
 
     def __init__(self, **kwargs):
         super(AppGrid, self).__init__(**kwargs)
-        Clock.schedule_interval(self.update, 1/60.0)
+        Clock.schedule_interval(self.update, 1./60.)
 
         self.old_play_not_pause = 0
         self.play_not_pause     = 0
