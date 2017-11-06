@@ -16,6 +16,9 @@
             pos: self.pos
             size: self.size
 
+        Color:
+            rgba: [1,0,0,1]
+
         PushMatrix
         Translate: # position canvas origin at centre of current box
             x: self.center[0]
@@ -26,28 +29,24 @@
         PopMatrix
 
 <GaugeBox>:
-    Scatter:
-        do_translation: False
-        do_scale: False
-        do_rotation: False
-        size_hint: [None, None] # confine scatter to box not window
-        size: [300, 300]
-        Image:
-            source: 'lm_tacho_dial_huge.png'
-            size_hint: [None, None]
-            size: [300, 300]
-        Image:
-            source: 'lm_tacho_needle_huge.png'
-            size_hint: [None, None]
-            size: [300, 300]
+    Image:
+        source: 'lm_tacho_needle_huge.png'
+        pos: self.pos
+        size: self.size
 
-            canvas.before:
-                PushMatrix
-                Rotate:
-                    angle: root.angle
-                    origin: self.center
-            canvas.after:
-                PopMatrix
+        canvas.before:
+            Rectangle:
+                source: 'lm_tacho_dial_huge.png'
+                # centre the dial with a shift right
+                pos: [self.center[0]-self.height/2.0, self.y]
+                size: [self.height, self.height] # circular, not an ellipse
+            PushMatrix
+            Rotate:
+                angle: root.angle
+                origin: self.center
+
+        canvas.after:
+            PopMatrix
 
 <DistSpeedBox>:
     orientation: 'vertical'
