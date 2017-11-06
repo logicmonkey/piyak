@@ -10,7 +10,9 @@ from kivy.uix.scatter import Scatter
 from kivy.uix.behaviors import ToggleButtonBehavior, ButtonBehavior
 from kivy.uix.button import Button
 
-from kivy.properties import NumericProperty
+from kivy.graphics.vertex_instructions import Line
+
+from kivy.properties import NumericProperty, ListProperty
 
 from kivy.clock import Clock
 
@@ -55,6 +57,7 @@ class AppGrid(GridLayout):
             self.ids.i_distspeed.ids.i_speed.text = '[b]0.0[/b] km/h'
             self.ids.i_distspeed.ids.i_dist.text  = '[b]0[/b] m'
             self.ids.i_gauge.angle                = 0.0
+            self.ids.i_map.polyline               = []
             self.trackptr                         = 0
             self.lap_count                        = 0
             self.timestamps                       = []
@@ -112,6 +115,8 @@ class AppGrid(GridLayout):
             if dist > (self.track[self.trackptr]['dist'] + self.lap_count*self.lap_distance):
                 self.timestamps.append({'time': time_now.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3], 'speed': kph, 'dist': dist})
                 # let the trackpointer roll over and update the lap count
+                self.ids.i_map.polyline.append(self.track[self.trackptr]['x'])
+                self.ids.i_map.polyline.append(self.track[self.trackptr]['y'])
                 self.lap_count, self.trackptr = divmod(len(self.timestamps), len(self.track))
 
         if self.ids.i_elapsed.ids.i_buttons.ids.i_exit.state == 'down':
@@ -173,6 +178,9 @@ class AppGrid(GridLayout):
 
 class GaugeBox(BoxLayout):
     angle = NumericProperty(0)
+
+class MapBox(BoxLayout):
+    polyline = ListProperty([])
 
 class DistSpeedBox(BoxLayout):
     pass

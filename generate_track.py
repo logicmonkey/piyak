@@ -46,7 +46,7 @@ def generate_track(curve, location):
         lat = o['lat'] + degrees(y/R)
         lon = o['lon'] + degrees(x/(R*cos(radians(o['lat']))))
 
-        return {'lat': lat, 'lon': lon}
+        return {'lat': lat, 'lon': lon, 'x': 200.0 + 200.0 * x, 'y': 150.0 + 200.0 * y}
 
     # ------------------------------------------------------------------------------
     # generate_track
@@ -67,7 +67,7 @@ def generate_track(curve, location):
         if theta > 0: # calculate distance to last point
             dist += haversine(p, q)
 
-        track.append({'lat': p['lat'], 'lon': p['lon'], 'dist': dist})
+        track.append({'lat': p['lat'], 'lon': p['lon'], 'dist': dist, 'x': p['x'], 'y': p['y']})
         theta += dtheta
         q = p
 

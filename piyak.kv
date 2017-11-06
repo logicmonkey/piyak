@@ -2,12 +2,18 @@
     cols: 2
     GaugeBox:
         id: i_gauge
-    Image:
-        source: 'gerono_waikiki.png'
+    MapBox:
+        id: i_map
     DistSpeedBox:
         id: i_distspeed
     ElapsedBox:
         id: i_elapsed
+
+<MapBox>:
+    Scatter:
+        canvas:
+            Line:
+                points: root.polyline
 
 <GaugeBox>:
     Scatter:
