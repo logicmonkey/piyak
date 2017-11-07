@@ -16,7 +16,7 @@ from kivy.properties import NumericProperty, ListProperty
 
 from kivy.clock import Clock
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import random
 import math
@@ -30,12 +30,7 @@ class AppGrid(GridLayout):
         super(AppGrid, self).__init__(**kwargs)
         Clock.schedule_interval(self.update, 1./60.)
 
-        self.old_play_not_pause = 0
-        self.play_not_pause     = 0
-
-        # elapsed gets reset to a zero time delta
-        self.interval_start = datetime.now()
-        self.elapsed = self.interval_start - self.interval_start
+        self.elapsed = timedelta(0)
 
         self.pin_eventcount = 0
         self.pin_delta      = 0
@@ -50,10 +45,7 @@ class AppGrid(GridLayout):
     def update(self, *args):
 
         if self.ids.i_elapsed.ids.i_buttons.ids.i_reset.state == 'down':
-            self.old_play_not_pause               = 0
-            self.play_not_pause                   = 0
-            self.elapsed -= self.elapsed          # 0
-            self.ids.i_elapsed.ids.i_elapsed.text = '00:00:00'
+            self.elapsed                          = timedelta(0)
             self.ids.i_distspeed.ids.i_speed.text = '[b]0.0[/b] km/h'
             self.ids.i_distspeed.ids.i_dist.text  = '[b]0[/b] m'
             self.ids.i_gauge.angle                = 0.0
@@ -66,31 +58,19 @@ class AppGrid(GridLayout):
             self.pin_eventcount = 0
             self.pin_delta      = 0
 
-        # read the play/pause button state
-        #
+        hour, remr = divmod(self.elapsed.seconds, 60*60)
+        mins, secs = divmod(remr, 60)
+        self.ids.i_elapsed.ids.i_elapsed.text = "{:02d}:{:02d}:{:02d}".format(hour, mins, secs)
+
         if self.ids.i_elapsed.ids.i_buttons.ids.i_playpause.state == 'down':
-            self.play_not_pause = 1
-        else:
-            self.play_not_pause = 0
-
-        # exiting pause, so take a snapshot of the time
-        #
-        if self.old_play_not_pause == 0 and self.play_not_pause == 1:
-            self.interval_start = datetime.now()
-
-        if self.play_not_pause == 1:
-
-            # this is how we enter pause from play
-            #
-            self.old_play_not_pause = self.play_not_pause
-
             time_now = datetime.now()
 
-            self.elapsed += time_now - self.interval_start
-            hour, remr = divmod(self.elapsed.seconds, 60*60)
-            mins, secs = divmod(remr, 60)
+            if self.play_mode == 0:
+                self.play_mode = 1
+            else:
+                self.elapsed += time_now - self.time_last
 
-            self.ids.i_elapsed.ids.i_elapsed.text = "{:02d}:{:02d}:{:02d}".format(hour, mins, secs)
+            self.time_last = time_now
 
             # test value dummies - real pin samples need to go here
             self.pin_eventcount += 10 #8./60.
@@ -118,6 +98,9 @@ class AppGrid(GridLayout):
                 self.ids.i_map.polyline.append(self.track[self.trackptr]['x'])
                 self.ids.i_map.polyline.append(self.track[self.trackptr]['y'])
                 self.lap_count, self.trackptr = divmod(len(self.timestamps), len(self.track))
+
+        else:
+            self.play_mode = 0
 
         if self.ids.i_elapsed.ids.i_buttons.ids.i_exit.state == 'down':
             if self.elapsed.seconds > 0:
