@@ -175,15 +175,7 @@ class ButtonsBox(BoxLayout):
     pass
 
 class PlayPauseButton(ToggleButtonBehavior, Image):
-    def __init__(self, **kwargs):
-        super(PlayPauseButton, self).__init__(**kwargs)
-        self.source = 'button_play.png'
-
-    def on_state(self, widget, value):
-        if value == 'down':
-            self.source = 'button_pause.png'
-        else:
-            self.source = 'button_play.png'
+    pass
 
 class PiyakApp(App):
     def build(self):

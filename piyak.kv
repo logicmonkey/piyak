@@ -82,6 +82,7 @@
         font_size: 20
     PlayPauseButton:
         id: i_playpause
+        source: 'button_pause.png' if self.state == 'down' else 'button_play.png'
     Button:
         id: i_exit
         text: '[b]EXIT[/b]'
