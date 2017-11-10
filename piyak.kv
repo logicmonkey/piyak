@@ -2,23 +2,23 @@
     orientation: 'horizontal'
     BoxLayout:
         orientation: 'vertical'
-        Image:
-            source: 'lm_tacho_needle_huge.png'
-            pos: self.pos
-            size: self.size
-
+        BoxLayout:
             canvas.before:
                 Rectangle:
                     source: 'lm_tacho_dial_huge.png'
                     # centre the dial with a shift right
                     pos: [self.center[0]-self.height/2.0, self.y]
                     size: [self.height, self.height] # circular, not an ellipse
+            canvas.after:
                 PushMatrix
                 Rotate:
                     angle: root.needle
                     origin: self.center
-
-            canvas.after:
+                Rectangle:
+                    source: 'lm_tacho_needle_huge.png'
+                    # centre the dial with a shift right
+                    pos: [self.center[0]-self.height/2.0, self.y]
+                    size: [self.height, self.height] # circular, not an ellipse
                 PopMatrix
         Label:
             id: i_speed
