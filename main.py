@@ -24,10 +24,13 @@ import math
 from generate_track import generate_track
 from tcx import tcx_preamble, tcx_trackpoint, tcx_postamble
 
-class AppGrid(GridLayout):
+class Piyak(BoxLayout):
+
+    needle   = NumericProperty(0)
+    polyline = ListProperty([])
 
     def __init__(self, **kwargs):
-        super(AppGrid, self).__init__(**kwargs)
+        super(Piyak, self).__init__(**kwargs)
         Clock.schedule_interval(self.update, 1./60.)
 
         self.elapsed = timedelta(0)
@@ -44,25 +47,25 @@ class AppGrid(GridLayout):
 
     def update(self, *args):
 
-        if self.ids.i_elapsed.ids.i_buttons.ids.i_reset.state == 'down':
+        if self.ids.i_reset.state == 'down':
             self.elapsed                          = timedelta(0)
-            self.ids.i_distspeed.ids.i_speed.text = '[b]0.0[/b] km/h'
-            self.ids.i_distspeed.ids.i_dist.text  = '[b]0[/b] m'
-            self.ids.i_gauge.angle                = 0.0
-            self.ids.i_map.polyline               = []
-            self.trackptr                         = 0
-            self.lap_count                        = 0
-            self.timestamps                       = []
-            self.time_start                       = datetime.now()
+            self.ids.i_speed.text = '[b]0.0[/b] km/h'
+            self.ids.i_dist.text  = '[b]0[/b] m'
+            self.needle           = 0.0
+            self.polyline         = []
+            self.trackptr         = 0
+            self.lap_count        = 0
+            self.timestamps       = []
+            self.time_start       = datetime.now()
 
             self.pin_eventcount = 0
             self.pin_delta      = 0
 
         hour, remr = divmod(self.elapsed.seconds, 60*60)
         mins, secs = divmod(remr, 60)
-        self.ids.i_elapsed.ids.i_elapsed.text = "{:02d}:{:02d}:{:02d}".format(hour, mins, secs)
+        self.ids.i_elapsed.text = "{:02d}:{:02d}:{:02d}".format(hour, mins, secs)
 
-        if self.ids.i_elapsed.ids.i_buttons.ids.i_playpause.state == 'down':
+        if self.ids.i_playpause.state == 'down':
             time_now = datetime.now()
 
             if self.play_mode == 0:
@@ -87,22 +90,22 @@ class AppGrid(GridLayout):
             dist = self.pin_eventcount * 0.2444444444
 
             # update the telemetry based on the numbers
-            self.ids.i_gauge.angle                = -22.5 * hrpm
-            self.ids.i_distspeed.ids.i_speed.text = '[b]{0:.1f}[/b] km/h'.format(kph)
-            self.ids.i_distspeed.ids.i_dist.text  = '[b]{0:.0f}[/b] m'.format(dist)
+            self.needle           = -22.5 * hrpm
+            self.ids.i_speed.text = '[b]{0:.1f}[/b] km/h'.format(kph)
+            self.ids.i_dist.text  = '[b]{0:.0f}[/b] m'.format(dist)
 
             # check progress along the track (course)
             if dist > (self.track[self.trackptr]['dist'] + self.lap_count*self.lap_distance):
                 self.timestamps.append({'time': time_now.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3], 'speed': kph, 'dist': dist})
                 # let the trackpointer roll over and update the lap count
-                self.ids.i_map.polyline.append(self.track[self.trackptr]['x'])
-                self.ids.i_map.polyline.append(self.track[self.trackptr]['y'])
+                self.polyline.append(self.track[self.trackptr]['x'])
+                self.polyline.append(self.track[self.trackptr]['y'])
                 self.lap_count, self.trackptr = divmod(len(self.timestamps), len(self.track))
 
         else:
             self.play_mode = 0
 
-        if self.ids.i_elapsed.ids.i_buttons.ids.i_exit.state == 'down':
+        if self.ids.i_exit.state == 'down':
             if self.elapsed.seconds > 0:
 
                 # grab the final value from the pin
@@ -159,27 +162,12 @@ class AppGrid(GridLayout):
 
             App.get_running_app().stop()
 
-class GaugeBox(BoxLayout):
-    angle = NumericProperty(0)
-
-class MapBox(BoxLayout):
-    polyline = ListProperty([])
-
-class DistSpeedBox(BoxLayout):
-    pass
-
-class ElapsedBox(BoxLayout):
-    pass
-
-class ButtonsBox(BoxLayout):
-    pass
-
 class PlayPauseButton(ToggleButtonBehavior, Image):
     pass
 
 class PiyakApp(App):
     def build(self):
-        return AppGrid()
+        return Piyak()
 
 if __name__ == "__main__":
     PiyakApp().run()

@@ -1,90 +1,75 @@
-<AppGrid>: # a grid of box layouts behaves nicely
-    cols: 2
-    GaugeBox:
-        id: i_gauge
-    MapBox:
-        id: i_map
-    DistSpeedBox:
-        id: i_distspeed
-    ElapsedBox:
-        id: i_elapsed
-
-<MapBox>:
-    canvas:
-        Rectangle:
-            source: 'gerono_waikiki.png' # background image
+<Piyak>:
+    orientation: 'horizontal'
+    BoxLayout:
+        orientation: 'vertical'
+        Image:
+            source: 'lm_tacho_needle_huge.png'
             pos: self.pos
             size: self.size
 
-        Color:
-            rgba: [1,0,0,1]
+            canvas.before:
+                Rectangle:
+                    source: 'lm_tacho_dial_huge.png'
+                    # centre the dial with a shift right
+                    pos: [self.center[0]-self.height/2.0, self.y]
+                    size: [self.height, self.height] # circular, not an ellipse
+                PushMatrix
+                Rotate:
+                    angle: root.needle
+                    origin: self.center
 
-        PushMatrix
-        Translate: # position canvas origin at centre of current box
-            x: self.center[0]
-            y: self.center[1]
-        Line:      # all points are floats in the range [-1, 1] so scale up
-            points: [self.width/2.1*p for p in root.polyline]
-            width: 2.0
-        PopMatrix
+            canvas.after:
+                PopMatrix
+        Label:
+            id: i_speed
+            text: "0 km/h"
+            font_size: 90
+            markup: True
+            color: [0, 0, 1, 1]
+        Label:
+            id: i_dist
+            text: "0 m"
+            font_size: 90
+            markup: True
+            color: [0, 1, 0, 1]
 
-<GaugeBox>:
-    Image:
-        source: 'lm_tacho_needle_huge.png'
-        pos: self.pos
-        size: self.size
+    BoxLayout:
+        orientation: 'vertical'
+        BoxLayout:
+            canvas.after:
+                Rectangle:
+                    source: 'gerono_waikiki.png' # background image
+                    pos: self.pos
+                    size: self.size
 
-        canvas.before:
-            Rectangle:
-                source: 'lm_tacho_dial_huge.png'
-                # centre the dial with a shift right
-                pos: [self.center[0]-self.height/2.0, self.y]
-                size: [self.height, self.height] # circular, not an ellipse
-            PushMatrix
-            Rotate:
-                angle: root.angle
-                origin: self.center
+                Color:
+                    rgba: [1,0,0,1]
 
-        canvas.after:
-            PopMatrix
-
-<DistSpeedBox>:
-    orientation: 'vertical'
-    Label:
-        id: i_speed
-        text: "0 km/h"
-        font_size: 90
-        markup: True
-        color: [0, 0, 1, 1]
-    Label:
-        id: i_dist
-        text: "0 m"
-        font_size: 90
-        markup: True
-        color: [0, 1, 0, 1]
-
-<ElapsedBox>:
-    orientation: 'vertical'
-    Label:
-        id: i_elapsed
-        text: "00:00:00"
-        font_size: 90
-        color: [0.8, 0.8, 0.8, 1]
-    ButtonsBox:
-        id: i_buttons
-
-<ButtonsBox>:
-    orientation: 'horizontal'
-    Button:
-        id: i_reset
-        text: '[b]RESET[/b]'
-        markup: True
-        font_size: 20
-    PlayPauseButton:
-        id: i_playpause
-        source: 'button_pause.png' if self.state == 'down' else 'button_play.png'
-    Button:
-        id: i_exit
-        text: '[b]EXIT[/b]'
-        markup: True
-        font_size: 20
+                PushMatrix
+                Translate: # position canvas origin at centre of current box
+                    x: self.center[0]
+                    y: self.center[1]
+                Line:      # all points are floats in the range [-1, 1] so scale up
+                    points: [self.width/2.1*p for p in root.polyline]
+                    width: 2.0
+                PopMatrix
+        Label:
+            id: i_elapsed
+            text: "00:00:00"
+            font_size: 90
+            color: [0.8, 0.8, 0.8, 1]
+        BoxLayout:
+            orientation: 'horizontal'
+            Button:
+                id: i_reset
+                text: '[b]RESET[/b]'
+                markup: True
+                font_size: 20
+            PlayPauseButton:
+                id: i_playpause
+                source: 'button_pause.png' if self.state == 'down' else 'button_play.png'
+            Button:
+                id: i_exit
+                text: '[b]EXIT[/b]'
+                markup: True
+                font_size: 20
