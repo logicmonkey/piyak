@@ -18,11 +18,13 @@ from kivy.clock import Clock
 
 from datetime import datetime, timedelta
 
-import random
 import math
 
 from generate_track import generate_track
 from tcx import tcx_preamble, tcx_trackpoint, tcx_postamble
+
+import pigpio
+from gpio_pin import gpio_pin
 
 class Piyak(BoxLayout):
 
@@ -35,8 +37,9 @@ class Piyak(BoxLayout):
 
         self.elapsed = timedelta(0)
 
-        self.pin_eventcount = 0
-        self.pin_delta      = 0
+        GPIO_PIN = 2
+        self.device         = pigpio.pi()
+        self.pin            = gpio_pin(self.device, GPIO_PIN)
 
         # course progress tracking
         self.track, self.lap_distance = generate_track('gerono', 'waikiki')
@@ -58,9 +61,6 @@ class Piyak(BoxLayout):
             self.timestamps       = []
             self.time_start       = datetime.now()
 
-            self.pin_eventcount = 0
-            self.pin_delta      = 0
-
         hour, remr = divmod(self.elapsed.seconds, 60*60)
         mins, secs = divmod(remr, 60)
         self.ids.i_elapsed.text = "{:02d}:{:02d}:{:02d}".format(hour, mins, secs)
@@ -75,32 +75,33 @@ class Piyak(BoxLayout):
 
             self.time_last = time_now
 
-            # test value dummies - real pin samples need to go here
-            self.pin_eventcount += 10 #8./60.
-            self.pin_delta      = 75000 + 7500*math.sin(self.pin_eventcount/1500)
+            if self.pin._delta != None and self.pin._eventcount != 0:
+                # test value dummies - real pin samples need to go here
+                # self.pin_eventcount += 10
+                # self.pin_delta      = 75000 + 7500*math.sin(self.pin_eventcount/1500)
 
-            # the GPIO pin timer clock is 1 MHz <=> 1 us period
-            # count hundreds of rpm, i.e. hrpm = 60*1E6/(100*delta)
-            hrpm = 600000 / self.pin_delta
-            # using 750 rpm = 11 kph as a model, kph = rpm * 11/750
-            # then kph = 60*1E6/delta * 11/750 = 880000/delta
-            kph  = 880000 / self.pin_delta        # 11 kph = 750 rpm
-            # using 60 mins * 750 rpm = 11 km, 1 rev = 11E3/(60*750) metres
-            # 1 rev = 11000/(60*750) = 11/45 = 0.244.. m
-            dist = self.pin_eventcount * 0.2444444444
+                # the GPIO pin timer clock is 1 MHz <=> 1 us period
+                # count hundreds of rpm, i.e. hrpm = 60*1E6/(100*delta)
+                hrpm = 600000.0 / self.pin._delta
+                # using 750 rpm = 11 kph as a model, kph = rpm * 11/750
+                # then kph = 60*1E6/delta * 11/750 = 880000/delta
+                kph  = 880000.0 / self.pin._delta        # 11 kph = 750 rpm
+                # using 60 mins * 750 rpm = 11 km, 1 rev = 11E3/(60*750) metres
+                # 1 rev = 11000/(60*750) = 11/45 = 0.244.. m
+                dist = self.pin._eventcount * 0.2444444444
 
-            # update the telemetry based on the numbers
-            self.needle           = -22.5 * hrpm
-            self.ids.i_speed.text = '[b]{0:.1f}[/b] km/h'.format(kph)
-            self.ids.i_dist.text  = '[b]{0:.0f}[/b] m'.format(dist)
+                # update the telemetry based on the numbers
+                self.needle           = -22.5 * hrpm
+                self.ids.i_speed.text = '[b]{0:.1f}[/b] km/h'.format(kph)
+                self.ids.i_dist.text  = '[b]{0:.0f}[/b] m'.format(dist)
 
-            # check progress along the track (course)
-            if dist > (self.track[self.trackptr]['dist'] + self.lap_count*self.lap_distance):
-                self.timestamps.append({'time': time_now.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3], 'speed': kph, 'dist': dist})
-                # let the trackpointer roll over and update the lap count
-                self.polyline.append(self.track[self.trackptr]['x'])
-                self.polyline.append(self.track[self.trackptr]['y'])
-                self.lap_count, self.trackptr = divmod(len(self.timestamps), len(self.track))
+                # check progress along the track (course)
+                if dist > (self.track[self.trackptr]['dist'] + self.lap_count*self.lap_distance):
+                    self.timestamps.append({'time': time_now.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3], 'speed': kph, 'dist': dist})
+                    # let the trackpointer roll over and update the lap count
+                    self.polyline.append(self.track[self.trackptr]['x'])
+                    self.polyline.append(self.track[self.trackptr]['y'])
+                    self.lap_count, self.trackptr = divmod(len(self.timestamps), len(self.track))
 
         else:
             self.play_mode = 0
@@ -109,8 +110,8 @@ class Piyak(BoxLayout):
             if self.elapsed.seconds > 0:
 
                 # grab the final value from the pin
-                total_revs     = self.pin_eventcount
-                total_distance = self.pin_eventcount * 0.2444444444
+                total_revs     = self.pin._eventcount
+                total_distance = self.pin._eventcount * 0.2444444444
 
                 # -------------------------------------------------------------------------
                 # the app has run, now generate the activity file in tcx format
@@ -157,8 +158,8 @@ class Piyak(BoxLayout):
                 print("File: {}".format('activity_{}.tcx'.format(self.time_start.strftime("%Y%m%d%H%M"))))
 
             # exit cleanly by turning off the pin activities and stopping the device
-            #pin.cancel()
-            #device.stop()
+            self.pin.cancel()
+            self.device.stop()
 
             App.get_running_app().stop()
 
