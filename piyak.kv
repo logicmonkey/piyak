@@ -1,5 +1,4 @@
 <Piyak>:
-    orientation: 'horizontal'
     BoxLayout:
         orientation: 'vertical'
         BoxLayout:
@@ -25,12 +24,16 @@
             font_size: 90
             markup: True
             color: [0, 0, 1, 1]
+            size_hint_y: None
+            height: 110
         Label:
             id: i_dist
             text: "0 m"
             font_size: 90
             markup: True
             color: [0, 1, 0, 1]
+            size_hint_y: None
+            height: 110
 
     BoxLayout:
         orientation: 'vertical'
@@ -57,8 +60,11 @@
             text: "00:00:00"
             font_size: 90
             color: [0.8, 0.8, 0.8, 1]
+            size_hint_y: None
+            height: 110
         BoxLayout:
-            orientation: 'horizontal'
+            size_hint_y: None
+            height: 110
             Button:
                 id: i_reset
                 text: '[b]RESET[/b]'

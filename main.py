@@ -37,9 +37,9 @@ class Piyak(BoxLayout):
 
         self.elapsed = timedelta(0)
 
-        GPIO_PIN = 2
-        self.device         = pigpio.pi()
-        self.pin            = gpio_pin(self.device, GPIO_PIN)
+        GPIO_PIN    = 2
+        self.device = pigpio.pi()
+        self.pin    = gpio_pin(self.device, GPIO_PIN)
 
         # course progress tracking
         self.track, self.lap_distance = generate_track('gerono', 'waikiki')
@@ -51,7 +51,7 @@ class Piyak(BoxLayout):
     def update(self, *args):
 
         if self.ids.i_reset.state == 'down':
-            self.elapsed                          = timedelta(0)
+            self.elapsed          = timedelta(0)
             self.ids.i_speed.text = '[b]0.0[/b] km/h'
             self.ids.i_dist.text  = '[b]0[/b] m'
             self.needle           = 0.0
@@ -75,6 +75,7 @@ class Piyak(BoxLayout):
 
             self.time_last = time_now
 
+<<<<<<< HEAD
             if self.pin._delta != None and self.pin._eventcount != 0:
                 # test value dummies - real pin samples need to go here
                 # self.pin_eventcount += 10
@@ -102,7 +103,6 @@ class Piyak(BoxLayout):
                     self.polyline.append(self.track[self.trackptr]['x'])
                     self.polyline.append(self.track[self.trackptr]['y'])
                     self.lap_count, self.trackptr = divmod(len(self.timestamps), len(self.track))
-
         else:
             self.play_mode = 0
 
