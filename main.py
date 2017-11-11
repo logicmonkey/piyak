@@ -48,7 +48,7 @@ class Piyak(BoxLayout):
     def update(self, *args):
 
         if self.ids.i_reset.state == 'down':
-            self.elapsed                          = timedelta(0)
+            self.elapsed          = timedelta(0)
             self.ids.i_speed.text = '[b]0.0[/b] km/h'
             self.ids.i_dist.text  = '[b]0[/b] m'
             self.needle           = 0.0
@@ -81,10 +81,10 @@ class Piyak(BoxLayout):
 
             # the GPIO pin timer clock is 1 MHz <=> 1 us period
             # count hundreds of rpm, i.e. hrpm = 60*1E6/(100*delta)
-            hrpm = 600000 / self.pin_delta
+            hrpm = 600000.0 / self.pin_delta
             # using 750 rpm = 11 kph as a model, kph = rpm * 11/750
             # then kph = 60*1E6/delta * 11/750 = 880000/delta
-            kph  = 880000 / self.pin_delta        # 11 kph = 750 rpm
+            kph  = 880000.0 / self.pin_delta        # 11 kph = 750 rpm
             # using 60 mins * 750 rpm = 11 km, 1 rev = 11E3/(60*750) metres
             # 1 rev = 11000/(60*750) = 11/45 = 0.244.. m
             dist = self.pin_eventcount * 0.2444444444
