@@ -75,7 +75,6 @@ class Piyak(BoxLayout):
 
             self.time_last = time_now
 
-<<<<<<< HEAD
             if self.pin._delta != None and self.pin._eventcount != 0:
                 # test value dummies - real pin samples need to go here
                 # self.pin_eventcount += 10
