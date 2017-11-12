@@ -72,16 +72,20 @@ class Piyak(BoxLayout):
     needle   = NumericProperty(0)
     polyline = ListProperty([])
 
-    global demomode
+    global demomode, flywheeldatamode
 
     def __init__(self, **kwargs):
         super(Piyak, self).__init__(**kwargs)
         Clock.schedule_interval(self.update, 1./60.)
 
+        self.time_start = datetime.now()
+
         if not demomode:
             GPIO_PIN    = 2
             self.device = pigpio.pi()
             self.pin    = gpio_pin(self.device, GPIO_PIN)
+            if flywheeldatamode:
+                self.flywheeldata = open('flywheeldata_{}.csv'.format(self.time_start.strftime("%Y%m%d%H%M")), 'w')
 
         self.elapsed        = timedelta(0)
         self.pin_eventcount = 0
@@ -91,7 +95,7 @@ class Piyak(BoxLayout):
         self.trackptr   = 0
         self.lap_count  = 0
         self.timestamps = []
-        self.time_start = datetime.now()
+
 
     def update(self, *args):
 
@@ -121,10 +125,13 @@ class Piyak(BoxLayout):
             self.time_last = time_now
 
             if not demomode:
-                self.pin_eventcount = self.pin._eventcount
+                if flywheeldatamode and self.pin_eventcount != self.pin._eventcount:
+                    self.flywheeldata.write("{},{},{}\n".format(self.elapsed, self.pin_eventcount, self.pin_delta))
+
                 self.pin_delta      = self.pin._delta
+                self.pin_eventcount = self.pin._eventcount
             else:
-                self.pin_delta      = 8000*(10.0 + math.sin(self.pin_eventcount/60.))
+                self.pin_delta      = 8000.0*(10.0 + math.sin(self.pin_eventcount/60.0))
                 self.pin_eventcount += 1000000.0/(60.0*self.pin_delta)
 
             if self.pin_delta != None and self.pin_eventcount != 0:
@@ -208,6 +215,8 @@ class Piyak(BoxLayout):
             if not demomode:
                 self.pin.cancel()
                 self.device.stop()
+                if flywheeldatamode:
+                    self.flywheeldata.close()
 
             App.get_running_app().stop()
 
@@ -220,6 +229,7 @@ if __name__ == "__main__":
         import pigpio
         demomode = False
         from gpio_pin import gpio_pin
+        flywheeldatamode = True
     except:
         demomode = True
 
