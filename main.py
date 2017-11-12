@@ -1,5 +1,49 @@
 #!/usr/bin/env python
 
+'''
+Piyak - a program to monitor and log the effort on a kayak ergo.
+        Python on Raspberry Pi, with a user interface implemented
+        in Kivy. The program should run in a dummy "testmode" if the
+        Raspberry Pi pigpio library is not found. This allows it to
+        be run/tested/modified on a platform other than Raspberry Pi
+
+Copyright (c) 2017 Piers Barber
+
+This is free software released under the terms of the MIT licence
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+'''
+
+'''
+Raspberry Pi pins 1,3,9 are used. GPIO2 is pulled high through a 4k7 resistor
+The standard bike computer sensor fitted to a Lawler ergo is a normally open
+switch.
+
+                                      /
+                      4k7  +---------o  o----------+
+                      ___  |        sensor         |
+                   +-|___|-#                       |
+                   |       |                       |
+                   1       3      [5]     [7]      9
+                  3V3    GPIO2                    GND
+'''
+
 from kivy.app import App
 
 from kivy.uix.gridlayout import GridLayout
@@ -23,23 +67,24 @@ import math
 from generate_track import generate_track
 from tcx import tcx_preamble, tcx_trackpoint, tcx_postamble
 
-import pigpio
-from gpio_pin import gpio_pin
-
 class Piyak(BoxLayout):
 
     needle   = NumericProperty(0)
     polyline = ListProperty([])
 
+    global testmode
+
     def __init__(self, **kwargs):
         super(Piyak, self).__init__(**kwargs)
         Clock.schedule_interval(self.update, 1./60.)
 
-        self.elapsed = timedelta(0)
+        if not testmode:
+            GPIO_PIN    = 2
+            self.device = pigpio.pi()
+            self.pin    = gpio_pin(self.device, GPIO_PIN)
 
-        GPIO_PIN    = 2
-        self.device = pigpio.pi()
-        self.pin    = gpio_pin(self.device, GPIO_PIN)
+        self.elapsed        = timedelta(0)
+        self.pin_eventcount = 0
 
         # course progress tracking
         self.track, self.lap_distance = generate_track('gerono', 'waikiki')
@@ -75,20 +120,24 @@ class Piyak(BoxLayout):
 
             self.time_last = time_now
 
-            if self.pin._delta != None and self.pin._eventcount != 0:
-                # test value dummies - real pin samples need to go here
-                # self.pin_eventcount += 10
-                # self.pin_delta      = 75000 + 7500*math.sin(self.pin_eventcount/1500)
+            if not testmode:
+                self.pin_eventcount = self.pin._eventcount
+                self.pin_delta      = self.pin._delta
+            else:
+                self.pin_eventcount += 1
+                self.pin_delta      = 75000 + 7500*math.sin(self.pin_eventcount/150)
+
+            if self.pin_delta != None and self.pin_eventcount != 0:
 
                 # the GPIO pin timer clock is 1 MHz <=> 1 us period
                 # count hundreds of rpm, i.e. hrpm = 60*1E6/(100*delta)
-                hrpm = 600000.0 / self.pin._delta
+                hrpm = 600000.0 / self.pin_delta
                 # using 750 rpm = 11 kph as a model, kph = rpm * 11/750
                 # then kph = 60*1E6/delta * 11/750 = 880000/delta
-                kph  = 880000.0 / self.pin._delta        # 11 kph = 750 rpm
+                kph  = 880000.0 / self.pin_delta        # 11 kph = 750 rpm
                 # using 60 mins * 750 rpm = 11 km, 1 rev = 11E3/(60*750) metres
                 # 1 rev = 11000/(60*750) = 11/45 = 0.244.. m
-                dist = self.pin._eventcount * 0.2444444444
+                dist = self.pin_eventcount * 0.2444444444
 
                 # update the telemetry based on the numbers
                 self.needle           = -22.5 * hrpm
@@ -108,9 +157,8 @@ class Piyak(BoxLayout):
         if self.ids.i_exit.state == 'down':
             if self.elapsed.seconds > 0:
 
-                # grab the final value from the pin
-                total_revs     = self.pin._eventcount
-                total_distance = self.pin._eventcount * 0.2444444444
+                total_revs     = self.pin_eventcount
+                total_distance = self.pin_eventcount * 0.2444444444
 
                 # -------------------------------------------------------------------------
                 # the app has run, now generate the activity file in tcx format
@@ -157,17 +205,22 @@ class Piyak(BoxLayout):
                 print("File: {}".format('activity_{}.tcx'.format(self.time_start.strftime("%Y%m%d%H%M"))))
 
             # exit cleanly by turning off the pin activities and stopping the device
-            self.pin.cancel()
-            self.device.stop()
+            if not testmode:
+                self.pin.cancel()
+                self.device.stop()
 
             App.get_running_app().stop()
-
-class PlayPauseButton(ToggleButtonBehavior, Image):
-    pass
 
 class PiyakApp(App):
     def build(self):
         return Piyak()
 
 if __name__ == "__main__":
+    try:
+        import pigpio
+        testmode = False
+        from gpio_pin import gpio_pin
+    except:
+        testmode = True
+
     PiyakApp().run()
