@@ -88,6 +88,7 @@ class Piyak(BoxLayout):
                 self.flywheeldata = open('flywheeldata_{}.csv'.format(self.time_start.strftime("%Y%m%d%H%M")), 'w')
 
         self.elapsed        = timedelta(0)
+        self.pin_delta      = 0
         self.pin_eventcount = 0
 
         # course progress tracking
@@ -101,6 +102,8 @@ class Piyak(BoxLayout):
 
         if self.ids.i_reset.state == 'down':
             self.elapsed          = timedelta(0)
+            self.pin_delta        = 0
+            self.pin_eventcount   = 0
             self.ids.i_speed.text = '[b]0.0[/b] km/h'
             self.ids.i_dist.text  = '[b]0[/b] m'
             self.needle           = 0.0
