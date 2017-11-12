@@ -72,16 +72,20 @@
                     pos: self.pos
                     size: self.size
 
-                Color:
-                    rgba: [1,0,0,1]
-
                 PushMatrix
                 Translate: # position canvas origin at centre of current box
                     x: self.center[0]
                     y: self.center[1]
+                Color:
+                    rgba: [1,0,0,1]
                 Line:      # all points are floats in the range [-1, 1] so scale up
-                    points: [self.width/2.1*p for p in root.polyline]
-                    width: 2.0
+                    points: [self.width/2.1*p for p in root.polyline[:-4]]
+                    width: 2
+                Color:
+                    rgba: [1,1,0,1]
+                Line:
+                    points: [self.width/2.1*p for p in root.polyline[-4:]]
+                    width: 4
                 PopMatrix
         Label:
             id: i_elapsed

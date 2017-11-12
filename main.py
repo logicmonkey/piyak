@@ -3,7 +3,7 @@
 '''
 Piyak - a program to monitor and log the effort on a kayak ergo.
         Python on Raspberry Pi, with a user interface implemented
-        in Kivy. The program should run in a dummy "testmode" if the
+        in Kivy. The program should run in a dummy "demomode" if the
         Raspberry Pi pigpio library is not found. This allows it to
         be run/tested/modified on a platform other than Raspberry Pi
 
@@ -72,13 +72,13 @@ class Piyak(BoxLayout):
     needle   = NumericProperty(0)
     polyline = ListProperty([])
 
-    global testmode
+    global demomode
 
     def __init__(self, **kwargs):
         super(Piyak, self).__init__(**kwargs)
         Clock.schedule_interval(self.update, 1./60.)
 
-        if not testmode:
+        if not demomode:
             GPIO_PIN    = 2
             self.device = pigpio.pi()
             self.pin    = gpio_pin(self.device, GPIO_PIN)
@@ -120,12 +120,12 @@ class Piyak(BoxLayout):
 
             self.time_last = time_now
 
-            if not testmode:
+            if not demomode:
                 self.pin_eventcount = self.pin._eventcount
                 self.pin_delta      = self.pin._delta
             else:
-                self.pin_eventcount += 1
-                self.pin_delta      = 75000 + 7500*math.sin(self.pin_eventcount/150)
+                self.pin_delta      = 8000*(10.0 + math.sin(self.pin_eventcount/60.))
+                self.pin_eventcount += 1000000.0/(60.0*self.pin_delta)
 
             if self.pin_delta != None and self.pin_eventcount != 0:
 
@@ -205,7 +205,7 @@ class Piyak(BoxLayout):
                 print("File: {}".format('activity_{}.tcx'.format(self.time_start.strftime("%Y%m%d%H%M"))))
 
             # exit cleanly by turning off the pin activities and stopping the device
-            if not testmode:
+            if not demomode:
                 self.pin.cancel()
                 self.device.stop()
 
@@ -218,9 +218,9 @@ class PiyakApp(App):
 if __name__ == "__main__":
     try:
         import pigpio
-        testmode = False
+        demomode = False
         from gpio_pin import gpio_pin
     except:
-        testmode = True
+        demomode = True
 
     PiyakApp().run()
