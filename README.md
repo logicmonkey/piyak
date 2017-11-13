@@ -14,11 +14,11 @@ A short clip on YouTube:
 [![IMAGE ALT TEXT](https://i.ytimg.com/vi/152-v3C7pP8/hqdefault.jpg)](http://www.youtube.com/watch?v=152-v3C7pP8 "Piyak in use")
 
 ## Forensics
-The Raspberry Pi times the duration between events using a 1MHz clock - in theory to the nearest microsecond. So counting the revs on a a wheel spinning at 900 rpm or 15 times/second should be no problem for it. The forensic_DATETIME.csv file contains the duration of every revolution and can be read into your favourite spreadsheet program.
+The Raspberry Pi times the duration between events using a 1MHz clock - in theory to the nearest microsecond. So counting the revs on a wheel spinning at 900 rpm (15 times/second) should be no problem for it. The forensic_DATETIME.csv file contains the duration of every revolution and can be read into your favourite spreadsheet program.
 
 This is for interest only - a kayak ergo is additional to (not a subsitute for) time on the water. Don't read too much into it.
 
-Let's read too much into it... here's a 70 second kayak session:
+Let's read too much into it. Here's a 70 second kayak session:
 
 ![Short Session](https://raw.githubusercontent.com/logicmonkey/piyak/master/piyak_session.png)
 
