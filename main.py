@@ -72,7 +72,7 @@ class Piyak(BoxLayout):
     needle   = NumericProperty(0)
     polyline = ListProperty([])
 
-    global demomode, flywheeldatamode
+    global demomode, forensics
 
     def __init__(self, **kwargs):
         super(Piyak, self).__init__(**kwargs)
@@ -84,8 +84,8 @@ class Piyak(BoxLayout):
             GPIO_PIN    = 2
             self.device = pigpio.pi()
             self.pin    = gpio_pin(self.device, GPIO_PIN)
-            if flywheeldatamode:
-                self.flywheeldata = open('flywheeldata_{}.csv'.format(self.time_start.strftime("%Y%m%d%H%M")), 'w')
+            if forensics:
+                self.forensics = open('forensics_{}.csv'.format(self.time_start.strftime("%Y%m%d%H%M")), 'w')
 
         self.elapsed        = timedelta(0)
         self.pin_delta      = 0
@@ -128,8 +128,8 @@ class Piyak(BoxLayout):
             self.time_last = time_now
 
             if not demomode:
-                if flywheeldatamode and self.pin_eventcount != self.pin._eventcount:
-                    self.flywheeldata.write("{},{},{}\n".format(self.elapsed, self.pin_eventcount, self.pin_delta))
+                if forensics and self.pin_eventcount != self.pin._eventcount:
+                    self.forensics.write("{},{},{}\n".format(self.elapsed, self.pin_eventcount, self.pin_delta))
 
                 self.pin_delta      = self.pin._delta
                 self.pin_eventcount = self.pin._eventcount
@@ -218,8 +218,8 @@ class Piyak(BoxLayout):
             if not demomode:
                 self.pin.cancel()
                 self.device.stop()
-                if flywheeldatamode:
-                    self.flywheeldata.close()
+                if forensics:
+                    self.forensics.close()
 
             App.get_running_app().stop()
 
@@ -232,7 +232,7 @@ if __name__ == "__main__":
         import pigpio
         demomode = False
         from gpio_pin import gpio_pin
-        flywheeldatamode = True
+        forensics = True
     except:
         demomode = True
 
