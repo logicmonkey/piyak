@@ -37,7 +37,7 @@ tcx_preamble = """<?xml version="1.0" encoding="UTF-8"?>
   xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ns4="http://www.garmin.com/xmlschemas/ProfileExtension/v1">
   <Activities>
-    <Activity Sport="Canoeing">
+    <Activity Sport="Kayaking">
       <Id>{}Z</Id>
       <Lap StartTime="{}Z">
         <TotalTimeSeconds>{}</TotalTimeSeconds>
@@ -86,7 +86,7 @@ tcx_postamble = """        </Track>
     </Activity>
   </Activities>
   <Author xsi:type="Application_t">
-    <Name>LogicMonkey Tachometer</Name>
+    <Name>Piyak</Name>
     <Build>
       <Version>
         <VersionMajor>0</VersionMajor>
