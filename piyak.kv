@@ -102,7 +102,7 @@
                 text: '[b]RESET[/b]'
                 markup: True
                 font_size: 20
-                on_press: root.reset_cbf()
+                on_release: root.reset_cbf()
             ToggleButton:
                 id: i_playpause
                 Image:
@@ -114,4 +114,4 @@
                 text: '[b]EXIT[/b]'
                 markup: True
                 font_size: 20
-                on_press: root.exit_cbf()
+                on_release: root.exit_cbf()
