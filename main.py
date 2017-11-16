@@ -97,21 +97,7 @@ class Piyak(BoxLayout):
         self.lap_count  = 0
         self.timestamps = []
 
-
     def update(self, *args):
-
-        if self.ids.i_reset.state == 'down':
-            self.elapsed          = timedelta(0)
-            self.pin_delta        = 0
-            self.pin_eventcount   = 0
-            self.ids.i_speed.text = '[b]0.0[/b] km/h'
-            self.ids.i_dist.text  = '[b]0[/b] m'
-            self.needle           = 0.0
-            self.polyline         = []
-            self.trackptr         = 0
-            self.lap_count        = 0
-            self.timestamps       = []
-            self.time_start       = datetime.now()
 
         hour, remr = divmod(self.elapsed.seconds, 60*60)
         mins, secs = divmod(remr, 60)
@@ -164,64 +150,77 @@ class Piyak(BoxLayout):
         else:
             self.play_mode = 0
 
-        if self.ids.i_exit.state == 'down':
-            if self.elapsed.seconds > 0:
+    def reset_cbf(self):
+        self.elapsed          = timedelta(0)
+        self.pin_delta        = 0
+        self.pin_eventcount   = 0
+        self.ids.i_speed.text = '[b]0.0[/b] km/h'
+        self.ids.i_dist.text  = '[b]0[/b] m'
+        self.needle           = 0.0
+        self.polyline         = []
+        self.trackptr         = 0
+        self.lap_count        = 0
+        self.timestamps       = []
+        self.time_start       = datetime.now()
 
-                total_revs     = self.pin_eventcount
-                total_distance = self.pin_eventcount * 0.2444444444
+    def exit_cbf(self):
+        if self.elapsed.seconds > 0:
 
-                # -------------------------------------------------------------------------
-                # the app has run, now generate the activity file in tcx format
+            total_revs     = self.pin_eventcount
+            total_distance = self.pin_eventcount * 0.2444444444
 
-                max_speed = 0
-                for x in self.timestamps:
-                    if x['speed'] > max_speed:
-                        max_speed = x['speed']
+            # -------------------------------------------------------------------------
+            # the app has run, now generate the activity file in tcx format
 
-                calories  = 1000*self.elapsed.seconds/3600        # crude calc: 1000 calories/hour
-                elevation = 0
+            max_speed = 0
+            for x in self.timestamps:
+                if x['speed'] > max_speed:
+                    max_speed = x['speed']
 
-                average_speed = total_distance / self.elapsed.seconds
+            calories  = 1000*self.elapsed.seconds/3600        # crude calc: 1000 calories/hour
+            elevation = 0
 
-                time_start_str = self.time_start.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] # format for tcx file
+            average_speed = total_distance / self.elapsed.seconds
 
-                activity = open('activity_{}.tcx'.format(self.time_start.strftime("%Y%m%d%H%M")), 'w')
-                activity.write(tcx_preamble.format(time_start_str,
-                                                   time_start_str,
-                                                   self.elapsed.seconds,
-                                                   total_distance,
-                                                   max_speed,
-                                                   calories))
+            time_start_str = self.time_start.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] # format for tcx file
 
-                for tp in range(len(self.timestamps)): # loop over all trackpoints reached
-                    activity.write(tcx_trackpoint.format(self.timestamps[tp]['time'],
-                                   self.track[tp%len(self.track)]['lat'],
-                                   self.track[tp%len(self.track)]['lon'],
-                                   elevation,
-                                   self.timestamps[tp]['dist'],
-                                   self.timestamps[tp]['speed']))
+            activity = open('activity_{}.tcx'.format(self.time_start.strftime("%Y%m%d%H%M")), 'w')
+            activity.write(tcx_preamble.format(time_start_str,
+                                               time_start_str,
+                                               self.elapsed.seconds,
+                                               total_distance,
+                                               max_speed,
+                                               calories))
 
-                activity.write(tcx_postamble.format(average_speed))
-                activity.close()
+            for tp in range(len(self.timestamps)): # loop over all trackpoints reached
+                activity.write(tcx_trackpoint.format(self.timestamps[tp]['time'],
+                               self.track[tp%len(self.track)]['lat'],
+                               self.track[tp%len(self.track)]['lon'],
+                               elevation,
+                               self.timestamps[tp]['dist'],
+                               self.timestamps[tp]['speed']))
 
-                print("Total distance: {}".format(total_distance))
-                hour, remr = divmod(self.elapsed.seconds, 60*60)
-                mins, secs = divmod(remr, 60)
-                print("Total time: {:02d}:{:02d}:{:02d}".format(hour, mins, secs))
-                print("Average speed: {}".format(average_speed))
-                print("Total revs: {}".format(total_revs))
-                print("Lap length: {}".format(self.lap_distance))
-                print("Total laps: {}".format(total_distance/self.lap_distance))
-                print("File: {}".format('activity_{}.tcx'.format(self.time_start.strftime("%Y%m%d%H%M"))))
+            activity.write(tcx_postamble.format(average_speed))
+            activity.close()
 
-            # exit cleanly by turning off the pin activities and stopping the device
-            if not demomode:
-                self.pin.cancel()
-                self.device.stop()
-                if forensics:
-                    self.forensics.close()
+            print("Total distance: {}".format(total_distance))
+            hour, remr = divmod(self.elapsed.seconds, 60*60)
+            mins, secs = divmod(remr, 60)
+            print("Total time: {:02d}:{:02d}:{:02d}".format(hour, mins, secs))
+            print("Average speed: {}".format(average_speed))
+            print("Total revs: {}".format(total_revs))
+            print("Lap length: {}".format(self.lap_distance))
+            print("Total laps: {}".format(total_distance/self.lap_distance))
+            print("File: {}".format('activity_{}.tcx'.format(self.time_start.strftime("%Y%m%d%H%M"))))
 
-            App.get_running_app().stop()
+        # exit cleanly by turning off the pin activities and stopping the device
+        if not demomode:
+            self.pin.cancel()
+            self.device.stop()
+            if forensics:
+                self.forensics.close()
+
+        App.get_running_app().stop()
 
 class PiyakApp(App):
     def build(self):
