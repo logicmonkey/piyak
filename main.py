@@ -60,6 +60,8 @@ from kivy.properties import NumericProperty, ListProperty
 
 from kivy.clock import Clock
 
+from kivy.core.window import Window
+
 from datetime import datetime, timedelta
 
 import math
@@ -96,6 +98,26 @@ class Piyak(BoxLayout):
         self.trackptr   = 0
         self.lap_count  = 0
         self.timestamps = []
+
+        self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
+        self._keyboard.bind(on_key_down=self._on_keyboard_down)
+
+    def _keyboard_closed(self):
+        self._keyboard.unbind(on_key_down=self._on_keyboard_down)
+        self._keyboard = None
+
+    def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
+        if keycode[1] == 'x':
+            self.exit_cbf()
+        elif keycode[1] == 'r':
+            self.reset_cbf()
+        elif keycode[1] == ' ':
+            if self.ids.i_playpause.state == 'down':
+                self.ids.i_playpause.state = 'normal'
+            else:
+                self.ids.i_playpause.state = 'down'
+
+        return True
 
     def update(self, *args):
 
