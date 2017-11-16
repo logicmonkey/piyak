@@ -71,8 +71,9 @@ from tcx import tcx_preamble, tcx_trackpoint, tcx_postamble
 
 class Piyak(BoxLayout):
 
-    needle   = NumericProperty(0)
-    polyline = ListProperty([])
+    needle    = NumericProperty(0)
+    polyline  = ListProperty([])
+    play_mode = NumericProperty(0)
 
     global demomode, forensics
 

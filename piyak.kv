@@ -106,7 +106,7 @@
             ToggleButton:
                 id: i_playpause
                 Image:
-                    source: 'button_pause.png' if i_playpause.state == 'down' else 'button_play.png'
+                    source: 'button_pause.png' if root.play_mode == 1 else 'button_play.png'
                     pos: i_playpause.pos
                     size: i_playpause.size
             Button:
