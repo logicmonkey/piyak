@@ -112,28 +112,15 @@ class Piyak(BoxLayout):
             self.exit_cbf()
         elif keycode[1] == 'r':
             self.reset_cbf()
-        elif keycode[1] == ' ':
-            if self.ids.i_playpause.state == 'down':
-                self.ids.i_playpause.state = 'normal'
-            else:
-                self.ids.i_playpause.state = 'down'
+        elif keycode[1] == 'spacebar':
+            self.playpause_cbf()
 
         return True
 
     def update(self, *args):
-
-        hour, remr = divmod(self.elapsed.seconds, 60*60)
-        mins, secs = divmod(remr, 60)
-        self.ids.i_elapsed.text = "{:02d}:{:02d}:{:02d}".format(hour, mins, secs)
-
-        if self.ids.i_playpause.state == 'down':
-            time_now = datetime.now()
-
-            if self.play_mode == 0:
-                self.play_mode = 1
-            else:
-                self.elapsed += time_now - self.time_last
-
+        if self.play_mode == 1:
+            time_now       = datetime.now()
+            self.elapsed  += time_now - self.time_last
             self.time_last = time_now
 
             if not demomode:
@@ -163,6 +150,10 @@ class Piyak(BoxLayout):
                 self.ids.i_speed.text = '[b]{0:.1f}[/b] km/h'.format(kph)
                 self.ids.i_dist.text  = '[b]{0:.0f}[/b] m'.format(dist)
 
+                hour, remr = divmod(self.elapsed.seconds, 60*60)
+                mins, secs = divmod(remr, 60)
+                self.ids.i_elapsed.text = "{:02d}:{:02d}:{:02d}".format(hour, mins, secs)
+
                 # check progress along the track (course)
                 if dist > (self.track[self.trackptr]['dist'] + self.lap_count*self.lap_distance):
                     self.timestamps.append({'time': time_now.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3], 'speed': kph, 'dist': dist})
@@ -170,21 +161,27 @@ class Piyak(BoxLayout):
                     self.polyline.append(self.track[self.trackptr]['x'])
                     self.polyline.append(self.track[self.trackptr]['y'])
                     self.lap_count, self.trackptr = divmod(len(self.timestamps), len(self.track))
+
+    def playpause_cbf(self):
+        if self.play_mode == 0:
+            self.play_mode = 1
+            self.time_last = datetime.now()
         else:
             self.play_mode = 0
 
     def reset_cbf(self):
-        self.elapsed          = timedelta(0)
-        self.pin_delta        = 0
-        self.pin_eventcount   = 0
-        self.ids.i_speed.text = '[b]0.0[/b] km/h'
-        self.ids.i_dist.text  = '[b]0[/b] m'
-        self.needle           = 0.0
-        self.polyline         = []
-        self.trackptr         = 0
-        self.lap_count        = 0
-        self.timestamps       = []
-        self.time_start       = datetime.now()
+        self.elapsed            = timedelta(0)
+        self.pin_delta          = 0
+        self.pin_eventcount     = 0
+        self.ids.i_speed.text   = '[b]0.0[/b] km/h'
+        self.ids.i_dist.text    = '[b]0[/b] m'
+        self.ids.i_elapsed.text = '00:00:00'
+        self.needle             = 0.0
+        self.polyline           = []
+        self.trackptr           = 0
+        self.lap_count          = 0
+        self.timestamps         = []
+        self.time_start         = datetime.now()
 
     def exit_cbf(self):
         if self.elapsed.seconds > 0:
