@@ -123,6 +123,13 @@ class Piyak(BoxLayout):
             self.elapsed  += time_now - self.time_last
             self.time_last = time_now
 
+            # on a real system we need to update the elapsed time even if there
+            # are no events accumulated yet because the user isn't ready
+            #
+            hour, remr = divmod(self.elapsed.seconds, 60*60)
+            mins, secs = divmod(remr, 60)
+            self.ids.i_elapsed.text = "{:02d}:{:02d}:{:02d}".format(hour, mins, secs)
+
             if not demomode:
                 if forensics and self.pin_eventcount != self.pin._eventcount:
                     self.forensics.write("{},{},{}\n".format(self.elapsed, self.pin_eventcount, self.pin_delta))
@@ -149,10 +156,6 @@ class Piyak(BoxLayout):
                 self.needle           = -22.5 * hrpm
                 self.ids.i_speed.text = '[b]{0:.1f}[/b] km/h'.format(kph)
                 self.ids.i_dist.text  = '[b]{0:.0f}[/b] m'.format(dist)
-
-                hour, remr = divmod(self.elapsed.seconds, 60*60)
-                mins, secs = divmod(remr, 60)
-                self.ids.i_elapsed.text = "{:02d}:{:02d}:{:02d}".format(hour, mins, secs)
 
                 # check progress along the track (course)
                 if dist > (self.track[self.trackptr]['dist'] + self.lap_count*self.lap_distance):
