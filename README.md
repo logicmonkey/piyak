@@ -9,6 +9,7 @@
 * Forensic mode logs the speed of each flywheel rotation for the entire session (see below)
 * Should work with a touch screen - although this is untested
 * Keyboard controls: r - reset, spacebar - play/pause, x - exit
+* Demo mode generates synthetic movement data enabling development away from a Raspberry Pi
 
 A short clip on YouTube:
 
