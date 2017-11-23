@@ -137,7 +137,7 @@ class Piyak(BoxLayout):
                 self.pin_delta      = self.pin._delta
                 self.pin_eventcount = self.pin._eventcount
             else:
-                self.pin_delta      = 8000.0*(10.0 + math.sin(self.pin_eventcount/60.0))
+                self.pin_delta      = 75000.0 + 4000.0*math.sin(self.pin_eventcount/10.0)
                 self.pin_eventcount += 1000000.0/(60.0*self.pin_delta)
 
             if self.pin_delta != None and self.pin_eventcount != 0:
