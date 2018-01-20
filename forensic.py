@@ -56,15 +56,15 @@ if __name__ == '__main__' :
 
     timestamp, energy, rpm = forensic(filename)
 
-    llabel = 'Rotational Kinetic Energy (Joules)'
-    rlabel = 'RPM'
+    llabel = 'RPM'
+    rlabel = 'Rotational Kinetic Energy (Joules)'
     xlabel = 'Time (Seconds)'
 
     fig, yaxis = plt.subplots()
-    ly, ry = share_axis(yaxis, timestamp, xlabel, energy, llabel, 'b-', rpm, rlabel, 'r.')
+    ly, ry = share_axis(yaxis, timestamp, xlabel, rpm, llabel, 'b-', energy, rlabel, 'r.')
 
-    colour_axis(ly, 'b')
-    colour_axis(ry, 'r')
+    colour_axis(ly, 'r')
+    colour_axis(ry, 'b')
 
     plt.grid()
     plt.show()
