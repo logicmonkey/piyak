@@ -2,7 +2,7 @@
 
 '''
 Forensic - data analysis part of the Piyak kayak simulator ergo software for
-           use on Lawler ergos. This software reads forensic_yyyymmdd.csv
+           use on Lawler ergos. This software reads forensic_yyyymmddhhmm.csv
            files and calculates athlete power output. The calculation is
            given below and relies upon flywheel mass (to weigh it, you will
            have to dismantle your machine - a bit :)
@@ -186,6 +186,8 @@ if __name__ == '__main__' :
     xlabel = 'Time (seconds)'
 
     fig, (raxes, eaxes, paxes) = plt.subplots(3, sharex=True)
+
+    raxes.set_title('Data source: {}'.format(filename))
 
     # make the markers a separate plot so they can be turned on and off
 
