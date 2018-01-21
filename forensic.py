@@ -58,7 +58,7 @@ def calculate_power(energy, timestamp):
     Ein = E2-E1 + tpull--------          (1)
                         tsetup
 
-    Pin is the power of the stroke (energy over total time)
+    Pin is the power of the stroke (energy over total time, not just tpull)
 
               Ein
     Pin = ------------                   (2)
@@ -72,14 +72,19 @@ def calculate_power(energy, timestamp):
     looking_for_e2 = False    # then alternate between this state and the next
     looking_for_e3 = False
 
-    stroke_power = 0
+    min_index = 0             # position of the last minimum
 
     for i, v in enumerate(energy[:-1]): # loop over all i, i+1 pairs
 
-        power.append(stroke_power) # redundancy keeps data sets the same size
-
         if looking_for_e1 and v < energy[i+1]:
             local_min = (v, timestamp[i])
+
+            # pad all power entries up to the first local minimum with zero
+            for j in range(0, i - min_index):
+                power.append(0)
+
+            min_index = i
+
             looking_for_e1 = False
             looking_for_e2 = True
 
@@ -93,14 +98,22 @@ def calculate_power(energy, timestamp):
             e2, t2 = local_max
             e3, t3 = v, timestamp[i]
 
-            stroke_power = (e2-e1+(t2-t1)*(e2-e3)/(t3-t2))/(t3-t1) # eqs.(1,2)
+            # we're at E3 in the data, so calculate the power for this stroke
+            # and update the values from the E1 position to here
+            pin = (e2-e1+(t2-t1)*(e2-e3)/(t3-t2))/(t3-t1) # eqs.(1,2)
+
+            for j in range(0, i - min_index):
+                power.append(pin)
 
             local_min = (e3, t3) # e3 is the next e1
+            min_index = i
             looking_for_e2 = True
             looking_for_e3 = False
 
-    # push a final value as there is one less interval than energy data points
-    power.append(stroke_power)
+    # replicate final entries in power to match the energy data set size
+    for j in range(0, len(energy) - len(power)):
+        power.append(pin)
+
     return power
 
 def forensic(filename):
@@ -144,15 +157,19 @@ if __name__ == '__main__' :
 
     fig, (raxes, eaxes, paxes) = plt.subplots(3, sharex=True)
 
-    raxes.plot(timestamp, rpm, 'g-')
+    # make the markers a separate plot so they can be turned on and off
+
+    raxes.plot(timestamp, rpm, color='green')
+    raxes.plot(timestamp, rpm, color='green', marker='.')
     raxes.grid(b=True)
     raxes.set_ylabel(rlabel)
 
-    eaxes.plot(timestamp, energy, 'b-')
+    eaxes.plot(timestamp, energy, color='blue')
+    eaxes.plot(timestamp, energy, color='blue', marker='.')
     eaxes.grid(b=True)
     eaxes.set_ylabel(elabel)
 
-    paxes.plot(timestamp, power, 'r-')
+    paxes.plot(timestamp, power, color='orange')
     paxes.grid(b=True)
     paxes.set_ylabel(plabel)
 
