@@ -141,10 +141,20 @@ def calculate_power(energy, timestamp):
             looking_for_e3 = False
 
     # replicate final entries in power to match the energy data set size
-    for j in range(0, len(energy) - len(power)):
+    for i in range(0, len(energy) - len(power)):
         power.append(pin)
 
-    return power
+    KERNEL=40
+    fpower = []
+    for i, p in enumerate(power):
+        psum = 0
+        for j in range(0, KERNEL):
+            if i > j:
+                psum += power[i-j]
+
+        fpower.append(psum/KERNEL)
+
+    return power, fpower
 
 def forensic(filename):
 
@@ -170,15 +180,15 @@ def forensic(filename):
                 # KE = 0.5*I*w^2 (half I omega squared)
                 energy.append(mass*(radius*math.pi/period[-1])**2)
 
-    power = calculate_power(energy, timestamp)
+    power, fpower = calculate_power(energy, timestamp)
 
-    return timestamp, energy, rpm, power
+    return timestamp, energy, rpm, power, fpower
 
 if __name__ == '__main__' :
 
     filename = sys.argv[1]
 
-    timestamp, energy, rpm, power = forensic(filename)
+    timestamp, energy, rpm, power, fpower = forensic(filename)
 
     rlabel = 'Revolutions\n(per minute)'
     elabel = 'Rotational Energy\n(joules)'
@@ -205,7 +215,7 @@ if __name__ == '__main__' :
     eaxes.grid(b=True)
     eaxes.set_ylabel(elabel)
 
-    paxes.plot(timestamp, power, color='orange')
+    paxes.plot(timestamp, fpower, color='orange')
     paxes.grid(b=True)
     paxes.set_ylabel(plabel)
 
