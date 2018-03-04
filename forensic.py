@@ -41,20 +41,36 @@ radius = 0.200  # radius of Lawler flywheel in metres
 
 def calculate_power(energy, timestamp):
     '''
-    Identify individual Strokes
+    Identify Individual Strokes
 
-    The rotation rate increases with energy input and falls away beteen strokes
+    Traditionally the kayak stroke is split into four phases:
+
+      Catch    - point at which the blade has fully entered the water
+      Power    - pulling past the blade
+      Recovery - extraction of the blade from the water (inverse of catch)
+      Setup    - dead time after recovery on the current side and catch on
+                 the next. No part of the paddle is in the water.
+
+    A simpler model for use on an ergo has the catch as the start of the power
+    phase and recovery as the start of the setup phase. The rotation speed
+    increases with energy input (power) and falls away beteen strokes (setup).
+
+    On the water, catch and recovery are important periods as far as technique
+    is concerned as respectively, they optimise the effort during the power
+    phase and boat glide during setup. But for the purposes of ergo power
+    calculations they don't matter.
 
                  |                   .    .
              RPM |              .   / `. / `.  .
                  |    .    .   / `.'    '    `/ `.  .
                  |   / `. / `.'                   `/ `.
                  |  '    '                             `.
-                 L----------------------------------------> time
+                -+----------------------------------------> time
+                 '
 
-    Every revolution is timed individually, so the actual rotational kinetic
-    energy is easily calculated from the angular velocity, moment of inertia
-    and flywheel mass.
+    Every ergo flywheel revolution is timed individually, so the actual
+    rotational kinetic energy is easily calculated from the angular velocity,
+    moment of inertia and flywheel mass.
 
     repeat {
        look for an upward energy trend (energy input)
@@ -63,17 +79,17 @@ def calculate_power(energy, timestamp):
               # the first measurement in a downward trend is a local maximum
        }
 
-    This is all the data required for analysis of a stroke.
+    This is all the data required for power analysis of a stroke.
 
     Calculate Rate of Energy Input
 
     These values are calculated from measured values of angular velocity:
 
         E1     - starting rotational energy of the flywheel
-        E2     - local maximum energy at the end of a pull
+        E2     - local maximum energy at the end of a pull (power phase)
         E3     - energy that the flywheel decays to before the next stroke
-        tpull  - time difference between energies E2 and E1 (t2-t1)
-        tsetup - time difference between energies E3 and E2 (t3-t2)
+        tpower - time difference between energies E1 and E1 (t2-t1)
+        tsetup - time difference between energies E2 and E3 (t3-t2)
 
 
                                E2
@@ -81,31 +97,33 @@ def calculate_power(energy, timestamp):
                               /: `.
                              / :   `.
                             o  :     o.
-                           /   :       `. E4
-                          /    :<-tpull->`.
+                           /   :       `.
+                          /    :<-tpower->.E4
                          o     :           o.    o
                         /      :             `. /
                        /       :<---tsetup---->o min
-                    \ /        :               E3
-                 min o<-tpull->:
+                      /        :               E3
+                   \ /         :
+                min o<-tpower->:
                     E1
 
-    E4 is the energy level dropped to from E2 over a period equal to tpull
+    E4 is the energy level dropped to from E2 over a period equal to tpower
     as the flywheel spins down due to air resistance. It is calculated from
-    the spin down gradient
+    the spin down gradient. This energy is equal to the energy lost to air
+    resistance during the power phase.
 
     Ein is the total energy put into the flywheel plus the energy lost to
     air resistance of the fan. Ein = E2-E1+E4
 
-                       (E2-E3)
-    Ein = E2-E1 + tpull--------          (1)
-                        tsetup
+                        (E2-E3)
+    Ein = E2-E1 + tpower--------          (1)
+                         tsetup
 
-    Pin is the power of the stroke (energy over total time, not just tpull)
+    Pin is the power of the stroke (energy over total time, not just tpower)
 
               Ein
     Pin = ------------                   (2)
-          tpull+tsetup
+          tpower+tsetup
 
     '''
 
