@@ -43,12 +43,25 @@ def calculate_power(energy, timestamp):
     '''
     Identify individual Strokes
 
-    1) look for an upward energy trend
-       the first measurement in an upward trend is a local minimum
-    3) look for a downward trend in energy
-       the first measurement in a downward trend is a local maximum
-    5) look for an upward energy trend
-       the first measurement in an upward trend is a local minimum
+    The rotation rate increases with energy input and falls away beteen strokes
+
+                 |                   .    .
+             RPM |              .   / `. / `.  .
+                 |    .    .   / `.'    '    `/ `.  .
+                 |   / `. / `.'                   `/ `.
+                 |  '    '                             `.
+                 L----------------------------------------> time
+
+    Every revolution is timed individually, so the actual rotational kinetic
+    energy is easily calculated from the angular velocity, moment of inertia
+    and flywheel mass.
+
+    repeat {
+       look for an upward energy trend (energy input)
+              # the first measurement in an upward trend is a local minimum
+       look for a downward trend in energy (energy loss)
+              # the first measurement in a downward trend is a local maximum
+       }
 
     This is all the data required for analysis of a stroke.
 
