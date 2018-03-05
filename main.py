@@ -66,6 +66,8 @@ from datetime import datetime, timedelta
 
 import math
 
+from collections import deque
+
 from generate_track import generate_track
 from tcx import tcx_preamble, tcx_trackpoint, tcx_postamble
 
@@ -91,7 +93,7 @@ class Piyak(BoxLayout):
                 self.forensics = open('forensics_{}.csv'.format(self.time_start.strftime("%Y%m%d%H%M")), 'w')
 
         self.elapsed        = timedelta(0)
-        self.pin_delta      = 0
+        self.pin_delta      = deque([0,0,0], 3) # a 3 element shift register (double ended queue)
         self.pin_eventcount = 0
 
         # course progress tracking
@@ -118,6 +120,11 @@ class Piyak(BoxLayout):
         return True
 
     def update(self, *args):
+        # constants for the revoltion period shift register elements
+        NEW  = 2
+        PREV = 1
+        OLD  = 0
+
         if self.play_mode == 1:
             time_now       = datetime.now()
             self.elapsed  += time_now - self.time_last
@@ -134,23 +141,30 @@ class Piyak(BoxLayout):
                 if forensics and self.pin_eventcount != self.pin._eventcount:
                     self.forensics.write("{},{},{}\n".format(self.elapsed, self.pin_eventcount, self.pin_delta))
 
-                self.pin_delta      = self.pin._delta
+                self.pin_delta.append(self.pin._delta)
                 self.pin_eventcount = self.pin._eventcount
             else:
-                self.pin_delta      = 75000.0 + 4000.0*math.sin(self.pin_eventcount/10.0)
-                self.pin_eventcount += 1000000.0/(60.0*self.pin_delta)
+                self.pin_delta.append(75000.0 + 4000.0*math.sin(self.pin_eventcount/10.0))
+                self.pin_eventcount += 1000000.0/(60.0*self.pin_delta[NEW])
 
-            if self.pin_delta != None and self.pin_eventcount != 0:
+            if self.pin_delta[NEW] != None and self.pin_eventcount != 0:
 
                 # the GPIO pin timer clock is 1 MHz <=> 1 us period
                 # count hundreds of rpm, i.e. hrpm = 60*1E6/(100*delta)
-                hrpm = 600000.0 / self.pin_delta
+                hrpm = 600000.0 / self.pin_delta[NEW]
                 # using 750 rpm = 11 kph as a model, kph = rpm * 11/750
                 # then kph = 60*1E6/delta * 11/750 = 880000/delta
-                kph  = 880000.0 / self.pin_delta        # 11 kph = 750 rpm
+                kph  = 880000.0 / self.pin_delta[NEW]        # 11 kph = 750 rpm
                 # using 60 mins * 750 rpm = 11 km, 1 rev = 11E3/(60*750) metres
                 # 1 rev = 11000/(60*750) = 11/45 = 0.244.. m
                 dist = self.pin_eventcount * 0.2444444444
+
+                if self.pin_delta[NEW] > self.pin_delta[PREV] and self.pin_delta[PREV] < self.pin_delta[OLD]:
+                    # slow -> fast -> slow is a local maximum
+                    local_max = self.pin_delta[PREV]
+                elif self.pin_delta[NEW] < self.pin_delta[PREV] and self.pin_delta[PREV] > self.pin_delta[OLD]:
+                    # fast -> slow -> fast is a local minimum
+                    local_min = self.pin_delta[PREV]
 
                 # update the telemetry based on the numbers
                 self.needle           = -22.5 * hrpm
