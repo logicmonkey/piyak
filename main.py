@@ -176,8 +176,11 @@ class Piyak(BoxLayout):
                 self.ids.i_speed.text  = '[b]{0:.1f}[/b]km/h'.format(kph)
                 self.ids.i_dist.text   = '[b]{0:.0f}[/b]m'.format(dist)
                 self.ids.i_power.text  = '[b]{0:.0f}[/b]W'.format(self.rotational_ke_max - self.rotational_ke_min)
-                stroke_period = self.stroke[1] - self.stroke[0]
+
+                stroke_period = self.stroke[1] - self.stroke[0] # the time between two local minima
+
                 if stroke_period != timedelta(0):
+                    # stroke rate is 1 minute divided by the stroke period
                     self.ids.i_stroke.text = '[b]{0:.0f}[/b]'.format(60.0/(stroke_period.seconds + 1e-6*stroke_period.microseconds))
 
                 # check progress along the track (course)
