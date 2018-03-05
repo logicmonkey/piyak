@@ -92,9 +92,12 @@ class Piyak(BoxLayout):
             if forensics:
                 self.forensics = open('forensics_{}.csv'.format(self.time_start.strftime("%Y%m%d%H%M")), 'w')
 
-        self.elapsed        = timedelta(0)
-        self.pin_delta      = deque([0,0,0], 3) # a 3 element shift register (double ended queue)
-        self.pin_eventcount = 0
+        self.elapsed           = timedelta(0)
+        self.pin_delta         = deque([(0,0),(0,0),(0,0)], 3) # a 3 element shift register (double ended queue)
+        self.pin_eventcount    = 0
+        self.rotational_ke_max = 0
+        self.rotational_ke_min = 0
+        self.last_stroke_time  = timedelta(0)
 
         # course progress tracking
         self.track, self.lap_distance = generate_track('gerono', 'waikiki')
@@ -141,35 +144,41 @@ class Piyak(BoxLayout):
                 if forensics and self.pin_eventcount != self.pin._eventcount:
                     self.forensics.write("{},{},{}\n".format(self.elapsed, self.pin_eventcount, self.pin_delta))
 
-                self.pin_delta.append(self.pin._delta)
+                self.pin_delta.append((self.pin._delta, time_now))
                 self.pin_eventcount = self.pin._eventcount
             else:
-                self.pin_delta.append(75000.0 + 4000.0*math.sin(self.pin_eventcount/10.0))
-                self.pin_eventcount += 1000000.0/(60.0*self.pin_delta[NEW])
+                self.pin_delta.append((75000.0 + 4000.0*math.sin(self.pin_eventcount/10.0), time_now))
+                self.pin_eventcount += 1000000.0/(60.0*self.pin_delta[NEW][0])
 
             if self.pin_delta[NEW] != None and self.pin_eventcount != 0:
 
                 # the GPIO pin timer clock is 1 MHz <=> 1 us period
                 # count hundreds of rpm, i.e. hrpm = 60*1E6/(100*delta)
-                hrpm = 600000.0 / self.pin_delta[NEW]
+                hrpm = 600000.0 / self.pin_delta[NEW][0]
                 # using 750 rpm = 11 kph as a model, kph = rpm * 11/750
                 # then kph = 60*1E6/delta * 11/750 = 880000/delta
-                kph  = 880000.0 / self.pin_delta[NEW]        # 11 kph = 750 rpm
+                kph  = 880000.0 / self.pin_delta[NEW][0]     # 11 kph = 750 rpm
                 # using 60 mins * 750 rpm = 11 km, 1 rev = 11E3/(60*750) metres
                 # 1 rev = 11000/(60*750) = 11/45 = 0.244.. m
                 dist = self.pin_eventcount * 0.2444444444
 
-                if self.pin_delta[NEW] > self.pin_delta[PREV] and self.pin_delta[PREV] < self.pin_delta[OLD]:
+                stroke = 0
+
+                if self.pin_delta[NEW][0] > self.pin_delta[PREV][0] and self.pin_delta[PREV][0] < self.pin_delta[OLD][0]:
                     # slow -> fast -> slow is a local maximum
-                    local_max = self.pin_delta[PREV]
-                elif self.pin_delta[NEW] < self.pin_delta[PREV] and self.pin_delta[PREV] > self.pin_delta[OLD]:
+                    self.rotational_ke_max = self.pin_delta[PREV][0]
+                elif self.pin_delta[NEW][0] < self.pin_delta[PREV][0] and self.pin_delta[PREV][0] > self.pin_delta[OLD][0]:
                     # fast -> slow -> fast is a local minimum
-                    local_min = self.pin_delta[PREV]
+                    self.rotational_ke_min = self.pin_delta[PREV][0]
+                    #stroke                 = self.pin_delta[PREV][1] - self.last_stroke_time
+                    self.last_stroke_time  = self.pin_delta[PREV][1]
 
                 # update the telemetry based on the numbers
-                self.needle           = -22.5 * hrpm
-                self.ids.i_speed.text = '[b]{0:.1f}[/b] km/h'.format(kph)
-                self.ids.i_dist.text  = '[b]{0:.0f}[/b] m'.format(dist)
+                self.needle            = -22.5 * hrpm
+                self.ids.i_speed.text  = '[b]{0:.1f}[/b]km/h'.format(kph)
+                self.ids.i_dist.text   = '[b]{0:.0f}[/b]m'.format(dist)
+                self.ids.i_power.text  = '[b]{0:.0f}[/b]W'.format(self.rotational_ke_max - self.rotational_ke_min)
+                self.ids.i_stroke.text = '[b]{0:.0f}[/b]'.format(stroke)
 
                 # check progress along the track (course)
                 if dist > (self.track[self.trackptr]['dist'] + self.lap_count*self.lap_distance):
@@ -188,11 +197,13 @@ class Piyak(BoxLayout):
 
     def reset_cbf(self):
         self.elapsed            = timedelta(0)
-        self.pin_delta          = 0
+        self.pin_delta          = deque([(0,0),(0,0),(0,0)], 3)
         self.pin_eventcount     = 0
-        self.ids.i_speed.text   = '[b]0.0[/b] km/h'
-        self.ids.i_dist.text    = '[b]0[/b] m'
+        self.ids.i_speed.text   = '[b]0.0[/b]km/h'
+        self.ids.i_dist.text    = '[b]0[/b]m'
         self.ids.i_elapsed.text = '00:00:00'
+        self.ids.i_power.text   = '[b]0[/b]W'
+        self.ids.i_stroke.text  = '[b]0[/b]'
         self.needle             = 0.0
         self.polyline           = []
         self.trackptr           = 0
