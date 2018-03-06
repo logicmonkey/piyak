@@ -127,7 +127,7 @@ class Piyak(BoxLayout):
     def update(self, *args):
         # constants for the revoltion period shift register elements
         NEW  = 2
-        PREV = 1
+        PREV = NEW-1
         OLD  = 0
 
         def rot_ke(rotation_time):
@@ -157,7 +157,7 @@ class Piyak(BoxLayout):
             self.ids.i_elapsed.text = "{:02d}:{:02d}:{:02d}".format(hour, mins, secs)
 
             if demomode:
-                # oscillate between 71ms and 79ms to simulate non-linear input
+                # synthetic activity oscillates between 71ms and 79ms to simulate non-linear input
                 self.pin_delta.append((75000.0 + 4000.0*math.sin(self.pin_eventcount/5.0), time_now))
                 self.pin_eventcount += 1000000.0/(60.0*self.pin_delta[NEW][0])
             else:
