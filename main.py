@@ -92,12 +92,13 @@ class Piyak(BoxLayout):
             if forensics:
                 self.forensics = open('forensics_{}.csv'.format(self.time_start.strftime("%Y%m%d%H%M")), 'w')
 
-        self.elapsed           = timedelta(0)
-        self.pin_delta         = deque([(0,0),(0,0),(0,0)], 3) # a 3 element shift register (double ended queue)
-        self.pin_eventcount    = 0
-        self.rotational_ke_max = 0
-        self.rotational_ke_min = 0
-        self.stroke            = deque([datetime.now(), datetime.now()], 2)
+        self.elapsed        = timedelta(0)
+        self.pin_delta      = deque([(0,0),(0,0),(0,0)], 3) # a 3 element shift register (double ended queue)
+        self.pin_eventcount = 0
+        self.rot_ke_max     = 0.0                                        # power calc requires a maximum...
+        self.max_timestamp  = datetime.now()
+        self.rot_ke_min     = deque([0.0,0.0], 2)                        # ...and two minima
+        self.stroke         = deque([datetime.now(), datetime.now()], 2) # stroke rate requires two minima
 
         # course progress tracking
         self.track, self.lap_distance = generate_track('gerono', 'waikiki')
@@ -128,6 +129,20 @@ class Piyak(BoxLayout):
         PREV = 1
         OLD  = 0
 
+        def rot_ke(rotation_time):
+            # SI unit for moment of inertia is kg metres squared (not grammes)
+            # constants
+            mass   = 4.360  # mass of Lawler flywheel in kilogrammes
+            radius = 0.200  # radius of Lawler flywheel in metres
+
+            period = rotation_time * 1e-6 # microseconds to seconds
+
+            # w  = 2*pi/period (angular velocity omega = 2 pi radians * revolutions/second)
+            # I  = 0.5*m*r^2 (half m radius squared)
+            # KE = 0.5*I*w^2 (half I omega squared)
+
+            return mass*(radius*math.pi/period)**2
+
         if self.play_mode == 1:
             time_now       = datetime.now()
             self.elapsed  += time_now - self.time_last
@@ -144,6 +159,7 @@ class Piyak(BoxLayout):
                 if forensics and self.pin_eventcount != self.pin._eventcount:
                     self.forensics.write("{},{},{}\n".format(self.elapsed, self.pin_eventcount, self.pin_delta))
 
+                # shift in the new measured rotation period on every update, along with a timestamp
                 self.pin_delta.append((self.pin._delta, time_now))
                 self.pin_eventcount = self.pin._eventcount
             else:
@@ -162,26 +178,40 @@ class Piyak(BoxLayout):
                 # 1 rev = 11000/(60*750) = 11/45 = 0.2444m
                 dist = self.pin_eventcount * 0.2444444444
 
+                # look at the last three rotation measurements (NEW, PREV, OLD) to detect a local
+                # min or max (start and end of power phase)
                 if self.pin_delta[NEW][0] > self.pin_delta[PREV][0] and self.pin_delta[PREV][0] < self.pin_delta[OLD][0]:
-                    # slow -> fast -> slow is a local maximum
-                    self.rotational_ke_max = self.pin_delta[PREV][0]
+                    # slow -> fast -> slow makes PREV a local maximum
+                    self.rot_ke_max = rot_ke(self.pin_delta[PREV][0])
+                    self.max_timestamp = self.pin_delta[PREV][1]
 
                 elif self.pin_delta[NEW][0] < self.pin_delta[PREV][0] and self.pin_delta[PREV][0] > self.pin_delta[OLD][0]:
-                    # fast -> slow -> fast is a local minimum
-                    self.rotational_ke_min = self.pin_delta[PREV][0]
-                    self.stroke.append(time_now)
+                    # fast -> slow -> fast makes PREV a local minimum
+                    self.rot_ke_min.append(rot_ke(self.pin_delta[PREV][0]))
+                    self.stroke.append(self.pin_delta[PREV][1])
+
+                power_timedelta = self.max_timestamp - self.stroke[0]
+                setup_timedelta = self.stroke[1] - self.max_timestamp
+
+                tpower = power_timedelta.seconds + 1e-6*power_timedelta.microseconds
+                tsetup = power_timedelta.seconds + 1e-6*power_timedelta.microseconds
+
+                energy_in = 0
+                if tsetup != 0: # check for zero divide
+                    energy_in = self.rot_ke_max - self.rot_ke_min[0] + tpower/tsetup * (self.rot_ke_max - self.rot_ke_min[1])
 
                 # update the telemetry based on the numbers
                 self.needle            = -22.5 * hrpm
                 self.ids.i_speed.text  = '[b]{0:.1f}[/b]km/h'.format(kph)
                 self.ids.i_dist.text   = '[b]{0:.0f}[/b]m'.format(dist)
-                self.ids.i_power.text  = '[b]{0:.0f}[/b]W'.format(self.rotational_ke_max - self.rotational_ke_min)
 
-                stroke_period = self.stroke[1] - self.stroke[0] # the time between two local minima
+                stroke_timedelta = self.stroke[1] - self.stroke[0] # the time between two local minima
+                stroke_period = stroke_timedelta.seconds + 1e-6*stroke_timedelta.microseconds
 
-                if stroke_period != timedelta(0):
-                    # stroke rate is 1 minute divided by the stroke period
-                    self.ids.i_stroke.text = '[b]{0:.0f}[/b]'.format(60.0/(stroke_period.seconds + 1e-6*stroke_period.microseconds))
+                # stroke rate is 1 minute divided by the non-zero stroke period
+                if stroke_timedelta != timedelta(0):
+                    self.ids.i_stroke.text = '[b]{0:.0f}[/b]'.format(60.0/stroke_period)
+                    self.ids.i_power.text  = '[b]{0:.0f}[/b]W'.format(energy_in/stroke_period)
 
                 # check progress along the track (course)
                 if dist > (self.track[self.trackptr]['dist'] + self.lap_count*self.lap_distance):

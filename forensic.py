@@ -122,7 +122,7 @@ def calculate_power(energy, timestamp):
     Pin is the power of the stroke (energy over total time, not just tpower)
 
               Ein
-    Pin = ------------                   (2)
+    Pin = ------------                    (2)
           tpower+tsetup
 
     '''
