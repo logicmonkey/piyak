@@ -203,6 +203,7 @@ class Piyak(BoxLayout):
                 tsetup = power_timedelta.seconds + 1e-6*power_timedelta.microseconds
 
                 energy_in = 0
+                # this calculation is based upon my own analysis as given in forensic.py eqs (1) & (2)
                 if tsetup != 0: # check for zero divide
                     energy_in = self.rot_ke_max - self.rot_ke_min[0] + tpower/tsetup * (self.rot_ke_max - self.rot_ke_min[1])
 
