@@ -132,7 +132,7 @@ class Piyak(BoxLayout):
         def rot_ke(rotation_time):
             # SI unit for moment of inertia is kg metres squared (not grammes)
             # constants
-            mass   = 4.360  # mass of Lawler flywheel in kilogrammes
+            mass   = 4.360  # mass of Lawler flywheel in kilogrammes (I weighed mine!)
             radius = 0.200  # radius of Lawler flywheel in metres
 
             period = rotation_time * 1e-6 # microseconds to seconds
@@ -155,7 +155,13 @@ class Piyak(BoxLayout):
             mins, secs = divmod(remr, 60)
             self.ids.i_elapsed.text = "{:02d}:{:02d}:{:02d}".format(hour, mins, secs)
 
-            if not demomode:
+            if demomode:
+                # oscillate between 71ms and 79ms to simulate non-linear input
+                self.pin_delta.append((75000.0 + 4000.0*math.sin(self.pin_eventcount/5.0), time_now))
+                self.pin_eventcount += 1000000.0/(60.0*self.pin_delta[NEW][0])
+            else:
+
+                # only update the event queue when one has occurred (event count on the real I/O pin changes)
                 if self.pin_eventcount != self.pin._eventcount and self.pin._delta != None:
                     # shift in the new measured rotation period on every update, along with a timestamp
                     self.pin_delta.append((self.pin._delta, time_now))
@@ -164,9 +170,6 @@ class Piyak(BoxLayout):
                         self.forensics.write("{},{},{}\n".format(self.elapsed, self.pin_eventcount, self.pin_delta[NEW][0]))
 
                 self.pin_eventcount = self.pin._eventcount
-            else:
-                self.pin_delta.append((75000.0 + 4000.0*math.sin(self.pin_eventcount/5.0), time_now))
-                self.pin_eventcount += 1000000.0/(60.0*self.pin_delta[NEW][0])
 
             if self.pin_delta[NEW][0] != None and self.pin_eventcount != 0:
 
