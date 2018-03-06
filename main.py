@@ -166,7 +166,7 @@ class Piyak(BoxLayout):
                 self.pin_delta.append((75000.0 + 4000.0*math.sin(self.pin_eventcount/10.0), time_now))
                 self.pin_eventcount += 1000000.0/(60.0*self.pin_delta[NEW][0])
 
-            if self.pin_delta[NEW] != None and self.pin_eventcount != 0:
+            if self.pin_delta[NEW][0] != None and self.pin_eventcount != 0:
 
                 # the GPIO pin timer clock is 1MHz <=> 1us period
                 # count hundreds of rpm, i.e. hrpm = 60*1E6/(100*delta)
