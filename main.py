@@ -93,7 +93,7 @@ class Piyak(BoxLayout):
                 self.forensics = open('forensics_{}.csv'.format(self.time_start.strftime("%Y%m%d%H%M")), 'w')
 
         self.elapsed        = timedelta(0)
-        self.pin_delta      = deque([(0,0),(0,0),(0,0)], 3) # a 3 element shift register (double ended queue)
+        self.pin_delta      = deque([(1,0),(1,0),(1,0)], 3) # double ended queue = shift register 3 deep
         self.pin_eventcount = 0
         self.rot_ke_max     = 0.0                                        # power calc requires a maximum...
         self.max_timestamp  = datetime.now()
