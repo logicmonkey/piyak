@@ -230,7 +230,7 @@ if __name__ == '__main__' :
     timestamp, energy, rpm, fpower, fstroke = forensic(filename)
 
     rlabel = 'Revolutions\n(per minute)'
-    elabel = 'Rotational Energy\n(joules)'
+    elabel = 'Rotational\nEnergy\n(joules)'
     plabel = 'Power\n(watts)'
     slabel = 'Double Strokes\n(per minute)'
     xlabel = 'Time (seconds)'
@@ -257,4 +257,8 @@ if __name__ == '__main__' :
 
     saxes.set_xlabel(xlabel)
 
+    plt.tight_layout()
+
+    fig.savefig('test.png')
     plt.show()
+    #plt.close(fig)
