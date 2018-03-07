@@ -127,7 +127,8 @@ def calculate_power(energy, timestamp):
 
     '''
 
-    power=[]
+    power = []
+    stroke = []
 
     looking_for_e1 = True     # start here in hunt for first local minimum
     looking_for_e2 = False    # then alternate between this state and the next
@@ -143,6 +144,7 @@ def calculate_power(energy, timestamp):
             # pad all power entries up to the first local minimum with zero
             for j in range(0, i - min_index):
                 power.append(0)
+                stroke.append(0)
 
             min_index = i
 
@@ -165,6 +167,7 @@ def calculate_power(energy, timestamp):
 
             for j in range(0, i - min_index):
                 power.append(pin)
+                stroke.append(30.0/(t3-t1)) # double strokes/min = strokes/30s
 
             local_min = (e3, t3) # e3 is the next e1
             min_index = i
@@ -174,26 +177,31 @@ def calculate_power(energy, timestamp):
     # replicate final entries in power to match the energy data set size
     for i in range(0, len(energy) - len(power)):
         power.append(pin)
+        stroke.append(0)
 
     KERNEL=40
     fpower = []
+    fstroke = []
     for i, p in enumerate(power):
         psum = 0
+        ssum = 0
         for j in range(0, KERNEL):
             if i > j:
                 psum += power[i-j]
+                ssum += stroke[i-j]
 
         fpower.append(psum/KERNEL)
+        fstroke.append(ssum/KERNEL)
 
-    return power, fpower
+    return fpower, fstroke
 
 def forensic(filename):
 
-    period=[]      # not fully used - just the last thing pushed to it
+    period = []      # not fully used - just the last thing pushed to it
 
-    timestamp=[]
-    energy=[]
-    rpm=[]
+    timestamp = []
+    energy = []
+    rpm = []
 
     with open(filename) as csvfile:
         alldata = csv.reader(csvfile, delimiter=',')
@@ -211,22 +219,23 @@ def forensic(filename):
                 # KE = 0.5*I*w^2 (half I omega squared)
                 energy.append(mass*(radius*math.pi/period[-1])**2)
 
-    power, fpower = calculate_power(energy, timestamp)
+    fpower, fstroke = calculate_power(energy, timestamp)
 
-    return timestamp, energy, rpm, power, fpower
+    return timestamp, energy, rpm, fpower, fstroke
 
 if __name__ == '__main__' :
 
     filename = sys.argv[1]
 
-    timestamp, energy, rpm, power, fpower = forensic(filename)
+    timestamp, energy, rpm, fpower, fstroke = forensic(filename)
 
     rlabel = 'Revolutions\n(per minute)'
     elabel = 'Rotational Energy\n(joules)'
     plabel = 'Power\n(watts)'
+    slabel = 'Double Strokes\n(per minute)'
     xlabel = 'Time (seconds)'
 
-    fig, (raxes, eaxes, paxes) = plt.subplots(3, sharex=True)
+    fig, (raxes, eaxes, paxes, saxes) = plt.subplots(4, sharex=True)
 
     raxes.set_title('Data source: {}'.format(filename))
 
@@ -242,6 +251,10 @@ if __name__ == '__main__' :
     paxes.grid(b=True)
     paxes.set_ylabel(plabel)
 
-    paxes.set_xlabel(xlabel)
+    saxes.plot(timestamp, fstroke, color='gray')
+    saxes.grid(b=True)
+    saxes.set_ylabel(slabel)
+
+    saxes.set_xlabel(xlabel)
 
     plt.show()
