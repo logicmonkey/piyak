@@ -91,7 +91,8 @@ class Piyak(BoxLayout):
             self.device = pigpio.pi()
             self.pin    = gpio_pin(self.device, GPIO_PIN)
             if forensics:
-                self.forensics = open('forensics_{}.csv'.format(self.time_start.strftime("%Y%m%d%H%M")), 'w')
+                # this is the raw data and timestamps file for post processing
+                self.forensics = open('activity_{}.csv'.format(self.time_start.strftime("%Y%m%d%H%M")), 'w')
 
         self.elapsed        = timedelta(0)
         self.pin_delta      = deque([(1,0),(1,0),(1,0)], 3) # double ended queue = shift register 3 deep
