@@ -33,6 +33,7 @@ THE SOFTWARE.
 import sys
 import csv
 import math
+import re
 import matplotlib.pyplot as plt
 
 # SI unit for moment of inertia is kg metres squared (not grammes)
@@ -229,36 +230,36 @@ if __name__ == '__main__' :
 
     timestamp, energy, rpm, fpower, fstroke = forensic(filename)
 
-    rlabel = 'Revolutions\n(per minute)'
-    elabel = 'Rotational\nEnergy\n(joules)'
-    plabel = 'Power\n(watts)'
-    slabel = 'Double Strokes\n(per minute)'
-    xlabel = 'Time (seconds)'
+    xlabel    = 'Time (seconds)'
+    xtitle    = 'Data source: {}'.format(filename)
+    rpm_label = 'Revolutions\n(per minute)'
+    eny_label = 'Rotational\nEnergy\n(joules)'
+    pwr_label = 'Power\n(watts)'
+    stk_label = 'Double Strokes\n(per minute)'
 
-    fig, (raxes, eaxes, paxes, saxes) = plt.subplots(4, sharex=True)
+    fig, (rpm_axes, eny_axes, pwr_axes, stk_axes) = plt.subplots(4, sharex=True)
 
-    raxes.set_title('Data source: {}'.format(filename))
+    rpm_dots, = rpm_axes.plot(timestamp, rpm, 'g', marker='.', label='samples')
+    rpm_axes.grid(b=True)
+    rpm_axes.set_ylabel(rpm_label)
 
-    rdots, = raxes.plot(timestamp, rpm, 'g', marker='.', label='samples')
-    raxes.grid(b=True)
-    raxes.set_ylabel(rlabel)
+    eny_line, = eny_axes.plot(timestamp, energy, 'b', label='line')
+    eny_axes.grid(b=True)
+    eny_axes.set_ylabel(eny_label)
 
-    eline, = eaxes.plot(timestamp, energy, 'b', label='line')
-    eaxes.grid(b=True)
-    eaxes.set_ylabel(elabel)
+    pwr_axes.plot(timestamp, fpower, color='orange')
+    pwr_axes.grid(b=True)
+    pwr_axes.set_ylabel(pwr_label)
 
-    paxes.plot(timestamp, fpower, color='orange')
-    paxes.grid(b=True)
-    paxes.set_ylabel(plabel)
+    stk_axes.plot(timestamp, fstroke, color='gray')
+    stk_axes.grid(b=True)
+    stk_axes.set_ylabel(stk_label)
 
-    saxes.plot(timestamp, fstroke, color='gray')
-    saxes.grid(b=True)
-    saxes.set_ylabel(slabel)
-
-    saxes.set_xlabel(xlabel)
+    rpm_axes.set_title(xtitle)
+    stk_axes.set_xlabel(xlabel)
 
     plt.tight_layout()
 
-    fig.savefig('test.png')
+    fig.savefig(re.compile('csv').sub('png', filename))
     plt.show()
     #plt.close(fig)
