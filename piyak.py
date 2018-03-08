@@ -70,6 +70,7 @@ from collections import deque
 
 from generate_track import generate_track
 from tcx import tcx_preamble, tcx_trackpoint, tcx_postamble
+from piyak_report import piyak_report
 
 class Piyak(BoxLayout):
 
@@ -90,9 +91,10 @@ class Piyak(BoxLayout):
             GPIO_PIN    = 2
             self.device = pigpio.pi()
             self.pin    = gpio_pin(self.device, GPIO_PIN)
-            if forensics:
-                # this is the raw data and timestamps file for post processing
-                self.forensics = open('activity_{}.csv'.format(self.time_start.strftime("%Y%m%d%H%M")), 'w')
+
+        if forensics:
+            # this is the raw data and timestamps file for post processing
+            self.forensics = open('activity_{}.csv'.format(self.time_start.strftime("%Y%m%d%H%M")), 'w')
 
         self.elapsed        = timedelta(0)
         self.pin_delta      = deque([(1,0),(1,0),(1,0)], 3) # double ended queue = shift register 3 deep
@@ -170,10 +172,10 @@ class Piyak(BoxLayout):
                     # shift in the new measured rotation period on every update, along with a timestamp
                     self.pin_delta.append((self.pin._delta, time_now))
 
-                    if forensics:
-                        self.forensics.write("{},{},{}\n".format(self.elapsed, self.pin_eventcount, self.pin_delta[NEW][0]))
-
                 self.pin_eventcount = self.pin._eventcount
+
+            if forensics:
+                self.forensics.write("{},{},{}\n".format(self.elapsed, int(self.pin_eventcount), int(self.pin_delta[NEW][0])))
 
             if self.pin_delta[NEW][0] != None and self.pin_eventcount != 0:
 
@@ -257,6 +259,14 @@ class Piyak(BoxLayout):
         self.time_start         = datetime.now()
 
     def exit_cbf(self):
+        # exit cleanly by turning off the pin activities and stopping the device
+        if not demomode:
+            self.pin.cancel()
+            self.device.stop()
+
+        if forensics:
+            self.forensics.close()
+
         if self.elapsed.seconds > 0:
 
             total_revs     = self.pin_eventcount
@@ -306,12 +316,9 @@ class Piyak(BoxLayout):
             print("Total laps: {}".format(total_distance/self.lap_distance))
             print("File: {}".format('activity_{}.tcx'.format(self.time_start.strftime("%Y%m%d%H%M"))))
 
-        # exit cleanly by turning off the pin activities and stopping the device
-        if not demomode:
-            self.pin.cancel()
-            self.device.stop()
+            # now read in the full detail from the csv file and post process it
             if forensics:
-                self.forensics.close()
+                piyak_report('activity_{}.csv'.format(self.time_start.strftime("%Y%m%d%H%M")))
 
         App.get_running_app().stop()
 
@@ -327,5 +334,6 @@ if __name__ == "__main__":
         forensics = True
     except:
         demomode = True
+        forensics = False # enable for basic testing away from real hardware
 
     PiyakApp().run()

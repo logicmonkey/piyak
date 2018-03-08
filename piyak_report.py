@@ -1,8 +1,6 @@
-#!/usr/bin/env python
-
 '''
 Forensic - data analysis part of the Piyak kayak simulator ergo software for
-           use on Lawler ergos. This software reads forensic_yyyymmddhhmm.csv
+           use on Lawler ergos. This software reads activity_yyyymmddhhmm.csv
            files and calculates athlete power output. The calculation is
            given below and relies upon flywheel mass (to weigh it, you will
            have to dismantle your machine - a bit :)
@@ -35,10 +33,6 @@ import csv
 import math
 import re
 import matplotlib.pyplot as plt
-
-# SI unit for moment of inertia is kg metres squared (not grammes)
-mass   = 4.360  # mass of Lawler flywheel in kilogrammes
-radius = 0.200  # radius of Lawler flywheel in metres
 
 def calculate_power(energy, timestamp):
     '''
@@ -198,6 +192,10 @@ def calculate_power(energy, timestamp):
 
 def forensic(filename):
 
+    # SI unit for moment of inertia is kg metres squared (not grammes)
+    mass   = 4.360  # mass of Lawler flywheel in kilogrammes
+    radius = 0.200  # radius of Lawler flywheel in metres
+
     period = []      # not fully used - just the last thing pushed to it
 
     timestamp = []
@@ -224,9 +222,7 @@ def forensic(filename):
 
     return timestamp, energy, rpm, fpower, fstroke
 
-if __name__ == '__main__' :
-
-    filename = sys.argv[1]
+def piyak_report(filename):
 
     timestamp, energy, rpm, fpower, fstroke = forensic(filename)
 
