@@ -7,7 +7,7 @@ Piyak - a program to monitor and log the effort on a kayak ergo.
         Raspberry Pi pigpio library is not found. This allows it to
         be run/tested/modified on a platform other than Raspberry Pi
 
-Copyright (c) 2017 Piers Barber
+Copyright (c) 2017, 2018 Piers Barber
 
 This is free software released under the terms of the MIT licence
 
@@ -100,7 +100,9 @@ class Piyak(BoxLayout):
         self.max_timestamp  = dtn
         self.rot_ke_max     = 0.0                       # power calc requires a maximum...
         self.rot_ke_min     = deque([0.0,0.0], 2)       # ...and two minima
-        self.stroke         = deque([dtn, dtn, dtn], 3) # double stroke rate requires three minima
+        self.stroke         = deque([dtn, dtn],2)
+        self.power          = deque([], 20)
+        self.stroke_rate    = deque([], 20)
 
         # course progress tracking
         self.track, self.lap_distance = generate_track('gerono', 'waikiki')
@@ -213,19 +215,15 @@ class Piyak(BoxLayout):
                 self.ids.i_speed.text  = '[b]{0:.1f}[/b]km/h'.format(kph)
                 self.ids.i_dist.text   = '[b]{0:.0f}[/b]m'.format(dist)
 
-                stroke_timedelta = self.stroke[NEW] - self.stroke[PREV] # the time between two local minima
+                stroke_timedelta = self.stroke[1] - self.stroke[0] # the time between two local minima
                 stroke_period = stroke_timedelta.seconds + 1e-6*stroke_timedelta.microseconds
 
                 # stroke rate is 1 minute divided by the non-zero stroke period
                 if stroke_timedelta != timedelta(0):
-                    self.ids.i_power.text  = '[b]{0:.0f}[/b]W'.format(energy_in/stroke_period)
-
-                # double strokes seems to be a standard thing, so measure time across two
-                dbl_stroke_timedelta = self.stroke[NEW] - self.stroke[OLD] # the time between three local minima
-                dbl_stroke_period = dbl_stroke_timedelta.seconds + 1e-6*dbl_stroke_timedelta.microseconds
-
-                if dbl_stroke_timedelta != timedelta(0):
-                    self.ids.i_stroke.text = '[b]{0:.0f}[/b]dspm'.format(60.0/dbl_stroke_period)
+                    self.power.append(energy_in/stroke_period)
+                    self.stroke_rate.append(30.0/stroke_period)
+                    self.ids.i_power.text  = '[b]{0:.0f}[/b]W'.format(sum(self.power)/self.power.maxlen)
+                    self.ids.i_stroke.text = '[b]{0:.0f}[/b]dspm'.format(sum(self.stroke_rate)/self.stroke_rate.maxlen)
 
                 # check progress along the track (course)
                 if dist > (self.track[self.trackptr]['dist'] + self.lap_count*self.lap_distance):
