@@ -101,10 +101,10 @@ class Piyak(BoxLayout):
         self.pin_eventcount = 0
         self.max_timestamp  = dtn
         self.rot_ke_max     = 0.0                       # power calc requires a maximum...
-        self.rot_ke_min     = deque([0.0,0.0], 2)       # ...and two minima
-        self.stroke         = deque([dtn, dtn],2)
-        self.power          = deque([], 20)
-        self.stroke_rate    = deque([], 20)
+        self.rot_ke_min     = deque([0.0]*2, 2)         # ...and two minima
+        self.stroke         = deque([dtn]*2, 2)
+        self.power          = deque([0]*4, 4)
+        self.stroke_rate    = deque([0]*4, 4)
 
         # course progress tracking
         self.track, self.lap_distance = generate_track('gerono', 'waikiki')
@@ -165,6 +165,9 @@ class Piyak(BoxLayout):
                 # synthetic activity oscillates between 71ms and 79ms to simulate non-linear input
                 self.pin_delta.append((75000.0 + 4000.0*math.sin(self.pin_eventcount/5.0), time_now))
                 self.pin_eventcount += 1000000.0/(60.0*self.pin_delta[NEW][0])
+
+                if forensics:
+                    self.forensics.write("{},{},{}\n".format(self.elapsed, int(self.pin_eventcount), int(self.pin_delta[NEW][0])))
             else:
 
                 # only update the event queue when one has occurred (event count on the real I/O pin changes)
@@ -172,10 +175,11 @@ class Piyak(BoxLayout):
                     # shift in the new measured rotation period on every update, along with a timestamp
                     self.pin_delta.append((self.pin._delta, time_now))
 
-                self.pin_eventcount = self.pin._eventcount
+                    # as above, but needs to be sensitive to event count changes
+                    if forensics:
+                        self.forensics.write("{},{},{}\n".format(self.elapsed, int(self.pin_eventcount), int(self.pin_delta[NEW][0])))
 
-            if forensics:
-                self.forensics.write("{},{},{}\n".format(self.elapsed, int(self.pin_eventcount), int(self.pin_delta[NEW][0])))
+                self.pin_eventcount = self.pin._eventcount
 
             if self.pin_delta[NEW][0] != None and self.pin_eventcount != 0:
 

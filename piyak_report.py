@@ -196,7 +196,7 @@ def forensic(filename):
     mass   = 4.360  # mass of Lawler flywheel in kilogrammes
     radius = 0.200  # radius of Lawler flywheel in metres
 
-    period = []      # not fully used - just the last thing pushed to it
+    period = []     # not fully used - just the last thing pushed to it
 
     timestamp = []
     energy = []
@@ -257,5 +257,5 @@ def piyak_report(filename):
     plt.tight_layout()
 
     fig.savefig(re.compile('csv').sub('png', filename))
-    plt.show()
-    #plt.close(fig)
+    #plt.show()
+    plt.close(fig)
