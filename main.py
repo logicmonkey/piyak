@@ -62,6 +62,8 @@ from kivy.clock import Clock
 
 from kivy.core.window import Window
 
+import os, errno
+
 from datetime import datetime, timedelta
 
 import math
@@ -88,7 +90,7 @@ class Piyak(BoxLayout):
             self.device = pigpio.pi()
             self.pin    = gpio_pin(self.device, GPIO_PIN)
             if forensics:
-                self.forensics = open('forensics_{}.csv'.format(self.time_start.strftime("%Y%m%d%H%M")), 'w')
+                self.forensics = open('activities/forensics_{}.csv'.format(self.time_start.strftime("%Y%m%d%H%M")), 'w')
 
         self.elapsed        = timedelta(0)
         self.pin_delta      = 0
@@ -207,7 +209,7 @@ class Piyak(BoxLayout):
 
             time_start_str = self.time_start.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] # format for tcx file
 
-            activity = open('activity_{}.tcx'.format(self.time_start.strftime("%Y%m%d%H%M")), 'w')
+            activity = open('activities/activity_{}.tcx'.format(self.time_start.strftime("%Y%m%d%H%M")), 'w')
             activity.write(tcx_preamble.format(time_start_str,
                                                time_start_str,
                                                self.elapsed.seconds,
@@ -255,6 +257,15 @@ if __name__ == "__main__":
         demomode = False
         from gpio_pin import gpio_pin
         forensics = True
+
+        # make activities directory and bomb out if an error was anything other than
+        # it already exits
+        try:
+            os.makedirs('activities')
+        except OSError as err:
+            if err.errno != errno.EEXIST:
+                raise
+
     except:
         demomode = True
 
