@@ -32,7 +32,7 @@
         BoxLayout:
             canvas.after:
                 Rectangle:
-                    source: 'lm_tacho_dial.png'
+                    source: 'images/lm_tacho_dial.png'
                     # centre the dial with a shift right
                     pos: [self.center[0]-self.height/2.0, self.y]
                     size: [self.height, self.height] # circular, not an ellipse
@@ -41,7 +41,7 @@
                     angle: root.needle
                     origin: self.center
                 Rectangle:
-                    source: 'lm_tacho_needle.png'
+                    source: 'images/lm_tacho_needle.png'
                     # centre the dial with a shift right
                     pos: [self.center[0]-self.height/2.0, self.y]
                     size: [self.height, self.height] # circular, not an ellipse
@@ -76,7 +76,7 @@
         BoxLayout:
             canvas.after:
                 Rectangle:
-                    source: 'gerono_waikiki.png' # background image
+                    source: 'images/gerono_waikiki.png' # background image
                     pos: self.pos
                     size: self.size
 
@@ -123,7 +123,7 @@
                 id: i_playpause
                 on_press: root.playpause_cbf()
                 Image:
-                    source: 'button_pause.png' if root.play_mode == 1 else 'button_play.png'
+                    source: 'images/button_pause.png' if root.play_mode == 1 else 'images/button_play.png'
                     pos: i_playpause.pos
                     size: i_playpause.size
             Button:
