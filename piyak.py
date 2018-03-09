@@ -72,7 +72,7 @@ from collections import deque
 
 from generate_track import generate_track
 from tcx import tcx_preamble, tcx_trackpoint, tcx_postamble
-from piyak_report import piyak_report
+from report import report
 
 class Piyak(BoxLayout):
 
@@ -324,7 +324,7 @@ class Piyak(BoxLayout):
 
             # now read in the full detail from the csv file and post process it
             if forensics:
-                piyak_report('activities/activity_{}.csv'.format(self.time_start.strftime("%Y%m%d%H%M")))
+                report('activities/activity_{}.csv'.format(self.time_start.strftime("%Y%m%d%H%M")))
 
         App.get_running_app().stop()
 

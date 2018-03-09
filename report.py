@@ -222,7 +222,7 @@ def forensic(filename):
 
     return timestamp, energy, rpm, fpower, fstroke
 
-def piyak_report(filename):
+def report(filename):
 
     timestamp, energy, rpm, fpower, fstroke = forensic(filename)
 
