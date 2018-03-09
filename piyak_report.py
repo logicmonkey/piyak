@@ -1,8 +1,6 @@
-#!/usr/bin/env python
-
 '''
 Forensic - data analysis part of the Piyak kayak simulator ergo software for
-           use on Lawler ergos. This software reads forensic_yyyymmddhhmm.csv
+           use on Lawler ergos. This software reads activity_yyyymmddhhmm.csv
            files and calculates athlete power output. The calculation is
            given below and relies upon flywheel mass (to weigh it, you will
            have to dismantle your machine - a bit :)
@@ -33,28 +31,41 @@ THE SOFTWARE.
 import sys
 import csv
 import math
+import re
 import matplotlib.pyplot as plt
-
-# SI unit for moment of inertia is kg metres squared (not grammes)
-mass   = 4.360  # mass of Lawler flywheel in kilogrammes
-radius = 0.200  # radius of Lawler flywheel in metres
 
 def calculate_power(energy, timestamp):
     '''
-    Identify individual Strokes
+    Identify Individual Strokes
 
-    The rotation rate increases with energy input and falls away beteen strokes
+    Traditionally the kayak stroke is split into four phases:
+
+      Catch    - point at which the blade has fully entered the water
+      Power    - pulling past the blade
+      Recovery - extraction of the blade from the water (inverse of catch)
+      Setup    - dead time after recovery on the current side and catch on
+                 the next. No part of the paddle is in the water.
+
+    A simpler model for use on an ergo has the catch as the start of the power
+    phase and recovery as the start of the setup phase. The rotation speed
+    increases with energy input (power) and falls away beteen strokes (setup).
+
+    On the water, catch and recovery are important periods as far as technique
+    is concerned as respectively, they optimise the effort during the power
+    phase and boat glide during setup. But for the purposes of ergo power
+    calculations they don't matter.
 
                  |                   .    .
              RPM |              .   / `. / `.  .
                  |    .    .   / `.'    '    `/ `.  .
                  |   / `. / `.'                   `/ `.
                  |  '    '                             `.
-                 L----------------------------------------> time
+                -+----------------------------------------> time
+                 '
 
-    Every revolution is timed individually, so the actual rotational kinetic
-    energy is easily calculated from the angular velocity, moment of inertia
-    and flywheel mass.
+    Every ergo flywheel revolution is timed individually, so the actual
+    rotational kinetic energy is easily calculated from the angular velocity,
+    moment of inertia and flywheel mass.
 
     repeat {
        look for an upward energy trend (energy input)
@@ -63,17 +74,17 @@ def calculate_power(energy, timestamp):
               # the first measurement in a downward trend is a local maximum
        }
 
-    This is all the data required for analysis of a stroke.
+    This is all the data required for power analysis of a stroke.
 
     Calculate Rate of Energy Input
 
     These values are calculated from measured values of angular velocity:
 
         E1     - starting rotational energy of the flywheel
-        E2     - local maximum energy at the end of a pull
+        E2     - local maximum energy at the end of a pull (power phase)
         E3     - energy that the flywheel decays to before the next stroke
-        tpull  - time difference between energies E2 and E1 (t2-t1)
-        tsetup - time difference between energies E3 and E2 (t3-t2)
+        tpower - time difference between energies E1 and E1 (t2-t1)
+        tsetup - time difference between energies E2 and E3 (t3-t2)
 
 
                                E2
@@ -81,35 +92,38 @@ def calculate_power(energy, timestamp):
                               /: `.
                              / :   `.
                             o  :     o.
-                           /   :       `. E4
-                          /    :<-tpull->`.
+                           /   :       `.
+                          /    :<-tpower->.E4
                          o     :           o.    o
                         /      :             `. /
                        /       :<---tsetup---->o min
-                    \ /        :               E3
-                 min o<-tpull->:
+                      /        :               E3
+                   \ /         :
+                min o<-tpower->:
                     E1
 
-    E4 is the energy level dropped to from E2 over a period equal to tpull
+    E4 is the energy level dropped to from E2 over a period equal to tpower
     as the flywheel spins down due to air resistance. It is calculated from
-    the spin down gradient
+    the spin down gradient. This energy is equal to the energy lost to air
+    resistance during the power phase.
 
     Ein is the total energy put into the flywheel plus the energy lost to
     air resistance of the fan. Ein = E2-E1+E4
 
-                       (E2-E3)
-    Ein = E2-E1 + tpull--------          (1)
-                        tsetup
+                        (E2-E3)
+    Ein = E2-E1 + tpower--------          (1)
+                         tsetup
 
-    Pin is the power of the stroke (energy over total time, not just tpull)
+    Pin is the power of the stroke (energy over total time, not just tpower)
 
               Ein
-    Pin = ------------                   (2)
-          tpull+tsetup
+    Pin = ------------                    (2)
+          tpower+tsetup
 
     '''
 
-    power=[]
+    power = []
+    stroke = []
 
     looking_for_e1 = True     # start here in hunt for first local minimum
     looking_for_e2 = False    # then alternate between this state and the next
@@ -125,6 +139,7 @@ def calculate_power(energy, timestamp):
             # pad all power entries up to the first local minimum with zero
             for j in range(0, i - min_index):
                 power.append(0)
+                stroke.append(0)
 
             min_index = i
 
@@ -147,6 +162,7 @@ def calculate_power(energy, timestamp):
 
             for j in range(0, i - min_index):
                 power.append(pin)
+                stroke.append(30.0/(t3-t1)) # double strokes/min = strokes/30s
 
             local_min = (e3, t3) # e3 is the next e1
             min_index = i
@@ -156,26 +172,35 @@ def calculate_power(energy, timestamp):
     # replicate final entries in power to match the energy data set size
     for i in range(0, len(energy) - len(power)):
         power.append(pin)
+        stroke.append(0)
 
     KERNEL=40
     fpower = []
+    fstroke = []
     for i, p in enumerate(power):
         psum = 0
+        ssum = 0
         for j in range(0, KERNEL):
             if i > j:
                 psum += power[i-j]
+                ssum += stroke[i-j]
 
         fpower.append(psum/KERNEL)
+        fstroke.append(ssum/KERNEL)
 
-    return power, fpower
+    return fpower, fstroke
 
 def forensic(filename):
 
-    period=[]      # not fully used - just the last thing pushed to it
+    # SI unit for moment of inertia is kg metres squared (not grammes)
+    mass   = 4.360  # mass of Lawler flywheel in kilogrammes
+    radius = 0.200  # radius of Lawler flywheel in metres
 
-    timestamp=[]
-    energy=[]
-    rpm=[]
+    period = []     # not fully used - just the last thing pushed to it
+
+    timestamp = []
+    energy = []
+    rpm = []
 
     with open(filename) as csvfile:
         alldata = csv.reader(csvfile, delimiter=',')
@@ -193,74 +218,44 @@ def forensic(filename):
                 # KE = 0.5*I*w^2 (half I omega squared)
                 energy.append(mass*(radius*math.pi/period[-1])**2)
 
-    power, fpower = calculate_power(energy, timestamp)
+    fpower, fstroke = calculate_power(energy, timestamp)
 
-    return timestamp, energy, rpm, power, fpower
+    return timestamp, energy, rpm, fpower, fstroke
 
-if __name__ == '__main__' :
+def piyak_report(filename):
 
-    filename = sys.argv[1]
+    timestamp, energy, rpm, fpower, fstroke = forensic(filename)
 
-    timestamp, energy, rpm, power, fpower = forensic(filename)
+    xlabel    = 'Time (seconds)'
+    xtitle    = 'Data source: {}'.format(filename)
+    rpm_label = 'Revolutions\n(per minute)'
+    eny_label = 'Rotational\nEnergy\n(joules)'
+    pwr_label = 'Power\n(watts)'
+    stk_label = 'Double Strokes\n(per minute)'
 
-    rlabel = 'Revolutions\n(per minute)'
-    elabel = 'Rotational Energy\n(joules)'
-    plabel = 'Power\n(watts)'
-    xlabel = 'Time (seconds)'
+    fig, (rpm_axes, eny_axes, pwr_axes, stk_axes) = plt.subplots(4, sharex=True)
 
-    fig, (raxes, eaxes, paxes) = plt.subplots(3, sharex=True)
+    rpm_dots, = rpm_axes.plot(timestamp, rpm, 'g', marker='.', label='samples')
+    rpm_axes.grid(b=True)
+    rpm_axes.set_ylabel(rpm_label)
 
-    raxes.set_title('Data source: {}'.format(filename))
+    eny_line, = eny_axes.plot(timestamp, energy, 'b', label='line')
+    eny_axes.grid(b=True)
+    eny_axes.set_ylabel(eny_label)
 
-    # make the markers a separate plot so they can be turned on and off
+    pwr_axes.plot(timestamp, fpower, color='orange')
+    pwr_axes.grid(b=True)
+    pwr_axes.set_ylabel(pwr_label)
 
-    rline, = raxes.plot(timestamp, rpm, 'g', label='line')
-    rdots, = raxes.plot(timestamp, rpm, 'g', marker='.', label='samples')
-    rleg   = raxes.legend(loc='upper left', fancybox=True, shadow=True)
-    rleg.get_frame().set_alpha(0.4)
-    raxes.grid(b=True)
-    raxes.set_ylabel(rlabel)
+    stk_axes.plot(timestamp, fstroke, color='gray')
+    stk_axes.grid(b=True)
+    stk_axes.set_ylabel(stk_label)
 
-    eline, = eaxes.plot(timestamp, energy, 'b', label='line')
-    edots, = eaxes.plot(timestamp, energy, 'b', marker='.', label='samples')
-    eleg   = eaxes.legend(loc='upper left', fancybox=True, shadow=True)
-    eleg.get_frame().set_alpha(0.4)
-    eaxes.grid(b=True)
-    eaxes.set_ylabel(elabel)
+    rpm_axes.set_title(xtitle)
+    stk_axes.set_xlabel(xlabel)
 
-    paxes.plot(timestamp, fpower, color='orange')
-    paxes.grid(b=True)
-    paxes.set_ylabel(plabel)
+    plt.tight_layout()
 
-    paxes.set_xlabel(xlabel)
-
-    # we will set up a dict mapping legend line to orig line, and enable
-    # picking on the legend line
-    rlines = [rline, rdots]
-    elines = [eline, edots]
-    lined = dict()
-    for legline, origline in zip(rleg.get_lines(), rlines):
-        legline.set_picker(5)  # 5 pts tolerance
-        lined[legline] = origline
-
-    for legline, origline in zip(eleg.get_lines(), elines):
-        legline.set_picker(5)  # 5 pts tolerance
-        lined[legline] = origline
-
-    def onpick(event):
-        # on the pick event, find the orig line corresponding to the
-        # legend proxy line, and toggle the visibility
-        legline = event.artist
-        origline = lined[legline]
-        vis = not origline.get_visible()
-        origline.set_visible(vis)
-        # Change the alpha on the line in the legend so we can see what lines
-        # have been toggled
-        if vis:
-            legline.set_alpha(1.0)
-        else:
-            legline.set_alpha(0.2)
-        fig.canvas.draw()
-
-    fig.canvas.mpl_connect('pick_event', onpick)
-    plt.show()
+    fig.savefig(re.compile('csv').sub('png', filename))
+    #plt.show()
+    plt.close(fig)

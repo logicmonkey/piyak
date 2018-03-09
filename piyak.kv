@@ -47,8 +47,16 @@
                     size: [self.height, self.height] # circular, not an ellipse
                 PopMatrix
         Label:
+            id: i_power
+            text: "[b]0.0[/b]W"
+            font_size: 90
+            markup: True
+            color: [1, 0, 0, 1]
+            size_hint_y: None
+            height: 110
+        Label:
             id: i_speed
-            text: "[b]0.0[/b] km/h"
+            text: "[b]0.0[/b]km/h"
             font_size: 90
             markup: True
             color: [0, 0, 1, 1]
@@ -56,7 +64,7 @@
             height: 110
         Label:
             id: i_dist
-            text: "[b]0[/b] m"
+            text: "[b]0[/b]m"
             font_size: 90
             markup: True
             color: [0, 1, 0, 1]
@@ -87,6 +95,14 @@
                     points: [self.width/2.1*p for p in root.polyline[-4:]]
                     width: 4
                 PopMatrix
+        Label:
+            id: i_stroke
+            text: "0dpsm"
+            font_size: 90
+            markup: True
+            color: [0.8, 0.8, 0.0, 1]
+            size_hint_y: None
+            height: 110
         Label:
             id: i_elapsed
             text: "00:00:00"

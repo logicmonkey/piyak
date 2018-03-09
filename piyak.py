@@ -7,7 +7,7 @@ Piyak - a program to monitor and log the effort on a kayak ergo.
         Raspberry Pi pigpio library is not found. This allows it to
         be run/tested/modified on a platform other than Raspberry Pi
 
-Copyright (c) 2017 Piers Barber
+Copyright (c) 2017, 2018 Piers Barber
 
 This is free software released under the terms of the MIT licence
 
@@ -68,8 +68,11 @@ from datetime import datetime, timedelta
 
 import math
 
+from collections import deque
+
 from generate_track import generate_track
 from tcx import tcx_preamble, tcx_trackpoint, tcx_postamble
+from piyak_report import piyak_report
 
 class Piyak(BoxLayout):
 
@@ -83,18 +86,27 @@ class Piyak(BoxLayout):
         super(Piyak, self).__init__(**kwargs)
         Clock.schedule_interval(self.update, 1./60.)
 
-        self.time_start = datetime.now()
+        dtn = datetime.now()
+        self.time_start = dtn
 
         if not demomode:
             GPIO_PIN    = 2
             self.device = pigpio.pi()
             self.pin    = gpio_pin(self.device, GPIO_PIN)
-            if forensics:
-                self.forensics = open('activities/forensics_{}.csv'.format(self.time_start.strftime("%Y%m%d%H%M")), 'w')
+
+        if forensics:
+            # this is the raw data and timestamps file for post processing
+            self.forensics = open('activity_{}.csv'.format(self.time_start.strftime("%Y%m%d%H%M")), 'w')
 
         self.elapsed        = timedelta(0)
-        self.pin_delta      = 0
+        self.pin_delta      = deque([(1,0),(1,0),(1,0)], 3) # double ended queue = shift register 3 deep
         self.pin_eventcount = 0
+        self.max_timestamp  = dtn
+        self.rot_ke_max     = 0.0                       # power calc requires a maximum...
+        self.rot_ke_min     = deque([0.0]*2, 2)         # ...and two minima
+        self.stroke         = deque([dtn]*2, 2)
+        self.power          = deque([0]*4, 4)
+        self.stroke_rate    = deque([0]*4, 4)
 
         # course progress tracking
         self.track, self.lap_distance = generate_track('gerono', 'waikiki')
@@ -120,6 +132,25 @@ class Piyak(BoxLayout):
         return True
 
     def update(self, *args):
+        # constants for the revoltion period shift register elements
+        NEW  = 2
+        PREV = NEW-1
+        OLD  = 0
+
+        def rot_ke(rotation_time):
+            # SI unit for moment of inertia is kg metres squared (not grammes)
+            # constants
+            mass   = 4.360  # mass of Lawler flywheel in kilogrammes (I weighed mine!)
+            radius = 0.200  # radius of Lawler flywheel in metres
+
+            period = rotation_time * 1e-6 # microseconds to seconds
+
+            # w  = 2*pi/period (angular velocity omega = 2 pi radians * revolutions/second)
+            # I  = 0.5*m*r^2 (half m radius squared)
+            # KE = 0.5*I*w^2 (half I omega squared)
+
+            return mass*(radius*math.pi/period)**2
+
         if self.play_mode == 1:
             time_now       = datetime.now()
             self.elapsed  += time_now - self.time_last
@@ -132,32 +163,75 @@ class Piyak(BoxLayout):
             mins, secs = divmod(remr, 60)
             self.ids.i_elapsed.text = "{:02d}:{:02d}:{:02d}".format(hour, mins, secs)
 
-            if not demomode:
-                if forensics and self.pin_eventcount != self.pin._eventcount:
-                    self.forensics.write("{},{},{}\n".format(self.elapsed, self.pin_eventcount, self.pin_delta))
+            if demomode:
+                # synthetic activity oscillates between 71ms and 79ms to simulate non-linear input
+                self.pin_delta.append((75000.0 + 4000.0*math.sin(self.pin_eventcount/5.0), time_now))
+                self.pin_eventcount += 1000000.0/(60.0*self.pin_delta[NEW][0])
 
-                self.pin_delta      = self.pin._delta
-                self.pin_eventcount = self.pin._eventcount
+                if forensics:
+                    self.forensics.write("{},{},{}\n".format(self.elapsed, int(self.pin_eventcount), int(self.pin_delta[NEW][0])))
             else:
-                self.pin_delta      = 75000.0 + 4000.0*math.sin(self.pin_eventcount/10.0)
-                self.pin_eventcount += 1000000.0/(60.0*self.pin_delta)
 
-            if self.pin_delta != None and self.pin_eventcount != 0:
+                # only update the event queue when one has occurred (event count on the real I/O pin changes)
+                if self.pin_eventcount != self.pin._eventcount and self.pin._delta != None:
+                    # shift in the new measured rotation period on every update, along with a timestamp
+                    self.pin_delta.append((self.pin._delta, time_now))
 
-                # the GPIO pin timer clock is 1 MHz <=> 1 us period
+                    # as above, but needs to be sensitive to event count changes
+                    if forensics:
+                        self.forensics.write("{},{},{}\n".format(self.elapsed, int(self.pin_eventcount), int(self.pin_delta[NEW][0])))
+
+                self.pin_eventcount = self.pin._eventcount
+
+            if self.pin_delta[NEW][0] != None and self.pin_eventcount != 0:
+
+                # the GPIO pin timer clock is 1MHz <=> 1us period
                 # count hundreds of rpm, i.e. hrpm = 60*1E6/(100*delta)
-                hrpm = 600000.0 / self.pin_delta
-                # using 750 rpm = 11 kph as a model, kph = rpm * 11/750
+                hrpm = 600000.0 / self.pin_delta[NEW][0]
+                # using 750rpm = 11km/h as a model, km/h = rpm * 11/750
                 # then kph = 60*1E6/delta * 11/750 = 880000/delta
-                kph  = 880000.0 / self.pin_delta        # 11 kph = 750 rpm
-                # using 60 mins * 750 rpm = 11 km, 1 rev = 11E3/(60*750) metres
-                # 1 rev = 11000/(60*750) = 11/45 = 0.244.. m
+                kph  = 880000.0 / self.pin_delta[NEW][0]     # 11km/h = 750rpm
+                # using 60 minutes * 750rpm = 11km, 1 rev = 11E3/(60*750) metres
+                # 1 rev = 11000/(60*750) = 11/45 = 0.2444m
                 dist = self.pin_eventcount * 0.2444444444
 
+                # look at the last three rotation measurements (NEW, PREV, OLD) to detect a local
+                # min or max (start and end of power phase)
+                if self.pin_delta[NEW][0] > self.pin_delta[PREV][0] and self.pin_delta[PREV][0] < self.pin_delta[OLD][0]:
+                    # slow -> fast -> slow makes PREV a local maximum
+                    self.rot_ke_max = rot_ke(self.pin_delta[PREV][0])
+                    self.max_timestamp = self.pin_delta[PREV][1]
+
+                elif self.pin_delta[NEW][0] < self.pin_delta[PREV][0] and self.pin_delta[PREV][0] > self.pin_delta[OLD][0]:
+                    # fast -> slow -> fast makes PREV a local minimum
+                    self.rot_ke_min.append(rot_ke(self.pin_delta[PREV][0]))
+                    self.stroke.append(self.pin_delta[PREV][1])
+
+                power_timedelta = self.max_timestamp - self.stroke[PREV]
+                setup_timedelta = self.stroke[PREV] - self.max_timestamp
+
+                tpower = power_timedelta.seconds + 1e-6*power_timedelta.microseconds
+                tsetup = power_timedelta.seconds + 1e-6*power_timedelta.microseconds
+
+                energy_in = 0
+                # this calculation is based upon my own analysis as given in forensic.py eqs (1) & (2)
+                if tsetup != 0: # check for zero divide
+                    energy_in = self.rot_ke_max - self.rot_ke_min[0] + tpower/tsetup * (self.rot_ke_max - self.rot_ke_min[1])
+
                 # update the telemetry based on the numbers
-                self.needle           = -22.5 * hrpm
-                self.ids.i_speed.text = '[b]{0:.1f}[/b] km/h'.format(kph)
-                self.ids.i_dist.text  = '[b]{0:.0f}[/b] m'.format(dist)
+                self.needle            = -22.5 * hrpm
+                self.ids.i_speed.text  = '[b]{0:.1f}[/b]km/h'.format(kph)
+                self.ids.i_dist.text   = '[b]{0:.0f}[/b]m'.format(dist)
+
+                stroke_timedelta = self.stroke[1] - self.stroke[0] # the time between two local minima
+                stroke_period = stroke_timedelta.seconds + 1e-6*stroke_timedelta.microseconds
+
+                # stroke rate is 1 minute divided by the non-zero stroke period
+                if stroke_timedelta != timedelta(0):
+                    self.power.append(energy_in/stroke_period)
+                    self.stroke_rate.append(30.0/stroke_period)
+                    self.ids.i_power.text  = '[b]{0:.0f}[/b]W'.format(sum(self.power)/self.power.maxlen)
+                    self.ids.i_stroke.text = '[b]{0:.0f}[/b]dspm'.format(sum(self.stroke_rate)/self.stroke_rate.maxlen)
 
                 # check progress along the track (course)
                 if dist > (self.track[self.trackptr]['dist'] + self.lap_count*self.lap_distance):
@@ -176,11 +250,13 @@ class Piyak(BoxLayout):
 
     def reset_cbf(self):
         self.elapsed            = timedelta(0)
-        self.pin_delta          = 0
+        self.pin_delta          = deque([(0,timedelta(0)),(0,timedelta(0)),(0,timedelta(0))], 3)
         self.pin_eventcount     = 0
-        self.ids.i_speed.text   = '[b]0.0[/b] km/h'
-        self.ids.i_dist.text    = '[b]0[/b] m'
+        self.ids.i_speed.text   = '[b]0.0[/b]km/h'
+        self.ids.i_dist.text    = '[b]0[/b]m'
         self.ids.i_elapsed.text = '00:00:00'
+        self.ids.i_power.text   = '[b]0[/b]W'
+        self.ids.i_stroke.text  = '[b]0[/b]dspm'
         self.needle             = 0.0
         self.polyline           = []
         self.trackptr           = 0
@@ -189,6 +265,14 @@ class Piyak(BoxLayout):
         self.time_start         = datetime.now()
 
     def exit_cbf(self):
+        # exit cleanly by turning off the pin activities and stopping the device
+        if not demomode:
+            self.pin.cancel()
+            self.device.stop()
+
+        if forensics:
+            self.forensics.close()
+
         if self.elapsed.seconds > 0:
 
             total_revs     = self.pin_eventcount
@@ -238,12 +322,9 @@ class Piyak(BoxLayout):
             print("Total laps: {}".format(total_distance/self.lap_distance))
             print("File: {}".format('activity_{}.tcx'.format(self.time_start.strftime("%Y%m%d%H%M"))))
 
-        # exit cleanly by turning off the pin activities and stopping the device
-        if not demomode:
-            self.pin.cancel()
-            self.device.stop()
+            # now read in the full detail from the csv file and post process it
             if forensics:
-                self.forensics.close()
+                piyak_report('activity_{}.csv'.format(self.time_start.strftime("%Y%m%d%H%M")))
 
         App.get_running_app().stop()
 
@@ -268,5 +349,6 @@ if __name__ == "__main__":
 
     except:
         demomode = True
+        forensics = False # enable for basic testing away from real hardware
 
     PiyakApp().run()
