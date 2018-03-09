@@ -96,7 +96,7 @@ class Piyak(BoxLayout):
 
         if forensics:
             # this is the raw data and timestamps file for post processing
-            self.forensics = open('activity_{}.csv'.format(self.time_start.strftime("%Y%m%d%H%M")), 'w')
+            self.forensics = open('activities/activity_{}.csv'.format(self.time_start.strftime("%Y%m%d%H%M")), 'w')
 
         self.elapsed        = timedelta(0)
         self.pin_delta      = deque([(1,0),(1,0),(1,0)], 3) # double ended queue = shift register 3 deep
@@ -320,11 +320,11 @@ class Piyak(BoxLayout):
             print("Total revs: {}".format(total_revs))
             print("Lap length: {}".format(self.lap_distance))
             print("Total laps: {}".format(total_distance/self.lap_distance))
-            print("File: {}".format('activity_{}.tcx'.format(self.time_start.strftime("%Y%m%d%H%M"))))
+            print("File: {}".format('activities/activity_{}.tcx'.format(self.time_start.strftime("%Y%m%d%H%M"))))
 
             # now read in the full detail from the csv file and post process it
             if forensics:
-                piyak_report('activity_{}.csv'.format(self.time_start.strftime("%Y%m%d%H%M")))
+                piyak_report('activities/activity_{}.csv'.format(self.time_start.strftime("%Y%m%d%H%M")))
 
         App.get_running_app().stop()
 
