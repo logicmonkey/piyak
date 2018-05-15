@@ -1,6 +1,6 @@
 # Piyak - a Raspberry Pi based kayak ergo training aid
 
-![Screenshot](https://raw.githubusercontent.com/logicmonkey/piyak/master/piyak_screenshot.png)
+![Screenshot](https://raw.githubusercontent.com/logicmonkey/piyak/master/images/piyak_screenshot.png)
 
 ## Features
 * Displays time, distance, speed, RPM
@@ -26,11 +26,11 @@ Let's read too much into it. Here's a 70 second kayak session:
 
 The vertical axis is RPM, time in seconds is along the bottom. Notice the jerky spin-up as a working speed is achieved, the oscillation in the work period and the smooth but non-linear spin down. Zooming in on a short work period shows every other stroke is slightly stronger than the previous:
 
-![Zoom](https://raw.githubusercontent.com/logicmonkey/piyak/master/piyak_zoom.png)
+![Zoom](https://raw.githubusercontent.com/logicmonkey/piyak/master/images/piyak_zoom.png)
 
 I clearly have a stronger side. Zooming right in, each point represents one flywheel revolution:
 
-![Left Right](https://raw.githubusercontent.com/logicmonkey/piyak/master/piyak_forensic.png)
+![Left Right](https://raw.githubusercontent.com/logicmonkey/piyak/master/images/piyak_forensic.png)
 
 Notice that the increase in speed is tailing off towards the end of each stroke and that the spin down before the next stroke is approximately linear. You can kind of make out the catch-drive-recovery-setup phases.
 
