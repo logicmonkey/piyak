@@ -238,13 +238,7 @@ if __name__ == '__main__' :
     pwr_label = 'Power\n(watts)'
     stk_label = 'Double Strokes\n(per minute)'
 
-    #    fig, (rpm_axes, eny_axes, pwr_axes, stk_axes, hst_axes) = plt.subplots(4, sharex=True)
-    gs = GridSpec(4, 2)
-    rpm_axes = plt.subplot(gs[0,0])
-    eny_axes = plt.subplot(gs[1,0])
-    pwr_axes = plt.subplot(gs[2,0])
-    stk_axes = plt.subplot(gs[3,0])
-    hst_axes = plt.subplot(gs[:,1])
+    fig, (rpm_axes, eny_axes, pwr_axes, stk_axes) = plt.subplots(4, sharex=True)
 
     rpm_dots, = rpm_axes.plot(timestamp, rpm, 'g', marker='.', label='samples')
     rpm_axes.grid(b=True)
@@ -265,8 +259,5 @@ if __name__ == '__main__' :
     rpm_axes.set_title(xtitle)
     stk_axes.set_xlabel(xlabel)
 
-    bins = [70, 80, 90, 100, 110, 120, 130, 140, 150, 160]
-    hst_axes.hist(fpower, bins, histtype='bar')
-
-    #plt.tight_layout()
+    plt.tight_layout()
     plt.show()
