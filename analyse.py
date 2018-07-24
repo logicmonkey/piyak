@@ -259,5 +259,55 @@ if __name__ == '__main__' :
     rpm_axes.set_title(xtitle)
     stk_axes.set_xlabel(xlabel)
 
+    # ANNOTATION START - comment out between START and END for simple plot
+    # create object for speed xy scatter because this can be queried and annotated
+    rpm_scat = rpm_axes.scatter(timestamp, rpm, color='g', marker='.')
+    eny_scat = eny_axes.scatter(timestamp, energy, color='b', marker='.')
+
+    rpm_anno = rpm_axes.annotate("", # set the annotation text based on value
+                   xy=(0,0), xytext=(20,20),
+                   textcoords="offset points",
+                   bbox=dict(boxstyle="round", fc="w"),
+                   arrowprops=dict(arrowstyle="->"))
+    eny_anno = eny_axes.annotate("", # set the annotation text based on value
+                   xy=(0,0), xytext=(20,20),
+                   textcoords="offset points",
+                   bbox=dict(boxstyle="round", fc="w"),
+                   arrowprops=dict(arrowstyle="->"))
+
+    rpm_anno.set_visible(False)
+    eny_anno.set_visible(False)
+
+    def hover(event):
+        rpm_vis = rpm_anno.get_visible()
+        eny_vis = eny_anno.get_visible()
+
+        if event.inaxes == rpm_axes:
+            cont, ind = rpm_scat.contains(event) # mouse event on scatter obj?
+            rpm_anno.set_visible(cont)
+            if cont:
+                pos = rpm_scat.get_offsets()[ind["ind"][0]]
+                rpm_anno.xy = pos
+                minutes, seconds = divmod(int(pos[0]), 60)
+                rpm_anno.set_text("Time {:02d}:{:02d}\nRPM {:.0f}".format(minutes, seconds, pos[1]))
+                fig.canvas.draw_idle()
+            elif rpm_vis:
+                fig.canvas.draw_idle()
+
+        if event.inaxes == eny_axes:
+            cont, ind = eny_scat.contains(event) # mouse event on scatter obj?
+            eny_anno.set_visible(cont)
+            if cont:
+                pos = eny_scat.get_offsets()[ind["ind"][0]]
+                eny_anno.xy = pos
+                minutes, seconds = divmod(int(pos[0]), 60)
+                eny_anno.set_text("Time {:02d}:{:02d}\nEnergy {:.0f}J".format(minutes, seconds, pos[1]))
+                fig.canvas.draw_idle()
+            elif eny_vis:
+                fig.canvas.draw_idle()
+
+    fig.canvas.mpl_connect("motion_notify_event", hover)
+    # ANNOTATION END
+
     plt.tight_layout()
     plt.show()
