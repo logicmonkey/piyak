@@ -240,11 +240,11 @@ if __name__ == '__main__' :
 
     fig, (rpm_axes, eny_axes, pwr_axes, stk_axes) = plt.subplots(4, sharex=True)
 
-    rpm_dots, = rpm_axes.plot(timestamp, rpm, 'g', marker='.', label='samples')
+    rpm_axes.plot(timestamp, rpm, 'g', marker='.', label='samples')
     rpm_axes.grid(b=True)
     rpm_axes.set_ylabel(rpm_label)
 
-    eny_line, = eny_axes.plot(timestamp, energy, 'b', label='line')
+    eny_axes.plot(timestamp, energy, 'b', label='line')
     eny_axes.grid(b=True)
     eny_axes.set_ylabel(eny_label)
 
