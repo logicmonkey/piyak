@@ -231,30 +231,25 @@ if __name__ == '__main__' :
 
     timestamp, energy, rpm, fpower, fstroke = forensic(filename)
 
-    xlabel    = 'Time (seconds)'
-    xtitle    = 'Data source: {}'.format(filename)
-    rpm_label = 'Revolutions\n(per minute)'
-    eny_label = 'Rotational\nEnergy\n(joules)'
-    pwr_label = 'Power\n(watts)'
-    stk_label = 'Double Strokes\n(per minute)'
+    xlabel = 'Time (seconds)'
+    xtitle = 'Data source: {}'.format(filename)
 
     fig, (rpm_axes, eny_axes, pwr_axes, stk_axes) = plt.subplots(4, sharex=True)
 
-    rpm_axes.plot(timestamp, rpm, 'g', marker='.', label='samples')
-    rpm_axes.grid(b=True)
-    rpm_axes.set_ylabel(rpm_label)
+    rpm_axes.set_ylabel('Revolutions\n(per minute)')
+    eny_axes.set_ylabel('Rotational\nEnergy\n(joules)')
+    pwr_axes.set_ylabel('Power\n(watts)')
+    stk_axes.set_ylabel('Double Strokes\n(per minute)')
 
-    eny_axes.plot(timestamp, energy, 'b', label='line')
-    eny_axes.grid(b=True)
-    eny_axes.set_ylabel(eny_label)
-
+    rpm_axes.plot(timestamp, rpm, color='g')
+    eny_axes.plot(timestamp, energy, color='b')
     pwr_axes.plot(timestamp, fpower, color='orange')
-    pwr_axes.grid(b=True)
-    pwr_axes.set_ylabel(pwr_label)
-
     stk_axes.plot(timestamp, fstroke, color='gray')
+
+    rpm_axes.grid(b=True)
+    eny_axes.grid(b=True)
+    pwr_axes.grid(b=True)
     stk_axes.grid(b=True)
-    stk_axes.set_ylabel(stk_label)
 
     rpm_axes.set_title(xtitle)
     stk_axes.set_xlabel(xlabel)
@@ -289,7 +284,7 @@ if __name__ == '__main__' :
                 pos = rpm_scat.get_offsets()[ind["ind"][0]]
                 rpm_anno.xy = pos
                 minutes, seconds = divmod(int(pos[0]), 60)
-                rpm_anno.set_text("Time {:02d}:{:02d}\nRPM {:.0f}".format(minutes, seconds, pos[1]))
+                rpm_anno.set_text("Time {:02d}:{:02d}\nTacho {:.0f}rpm".format(minutes, seconds, pos[1]))
                 fig.canvas.draw_idle()
             elif rpm_vis:
                 fig.canvas.draw_idle()
@@ -300,8 +295,7 @@ if __name__ == '__main__' :
             if cont:
                 pos = eny_scat.get_offsets()[ind["ind"][0]]
                 eny_anno.xy = pos
-                minutes, seconds = divmod(int(pos[0]), 60)
-                eny_anno.set_text("Time {:02d}:{:02d}\nEnergy {:.0f}J".format(minutes, seconds, pos[1]))
+                eny_anno.set_text("Time {:.2f}s\nEnergy {:.0f}J".format(pos[0], pos[1]))
                 fig.canvas.draw_idle()
             elif eny_vis:
                 fig.canvas.draw_idle()
