@@ -7,7 +7,7 @@ Analyse - data analysis part of the Piyak kayak simulator ergo software for
           given below and relies upon flywheel mass (to weigh it, you will
           have to dismantle your machine - a bit :)
 
-Copyright (c) 2017-18 Piers Barber
+Copyright (c) 2017-18, 2020 Piers Barber
 
 This is free software released under the terms of the MIT licence
 
@@ -28,6 +28,14 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
+'''
+
+'''
+  Synopsis:
+    Draws a graph of power, stroke rate etc
+
+  Usage:
+    analyse.py <activities/forensicfile>.csv
 '''
 
 import sys
