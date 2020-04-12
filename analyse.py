@@ -213,13 +213,13 @@ def forensic(filename):
                 timestamp.append(int(h)*3600 + int(m)*60 + float(s))
                 # the millisecond rotation periods into seconds
                 period.append(int(row[2])*1.0e-6)
-                # current rotation period to frequency in rpm
-                rpm.append(60.0/period[-1])
-
                 # w  = 2*pi/period (angular velocity omega = 2 pi radians * revolutions/second)
                 # I  = 0.5*m*r^2 (half m radius squared)
                 # KE = 0.5*I*w^2 (half I omega squared)
                 energy.append(mass*(radius*math.pi/period[-1])**2)
+
+                # current rotation period to frequency in rpm
+                rpm.append(60.0/period[-1])
 
     fpower, fstroke = calculate_power(energy, timestamp)
 
