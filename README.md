@@ -22,7 +22,7 @@ This is for interest only - a kayak ergo is additional to (not a subsitute for) 
 
 Let's read too much into it. Here's a 70 second kayak session:
 
-![Short Session](https://raw.githubusercontent.com/logicmonkey/piyak/master/piyak_session.png)
+![Short Session](https://raw.githubusercontent.com/logicmonkey/piyak/master/images/piyak_session.png)
 
 The vertical axis is RPM, time in seconds is along the bottom. Notice the jerky spin-up as a working speed is achieved, the oscillation in the work period and the smooth but non-linear spin down. Zooming in on a short work period shows every other stroke is slightly stronger than the previous:
 
