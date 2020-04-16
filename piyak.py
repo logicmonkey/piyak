@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 '''
 Piyak - a program to monitor and log the effort on a kayak ergo.
