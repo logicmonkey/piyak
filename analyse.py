@@ -1,13 +1,30 @@
 #!/usr/bin/env python
 
 '''
+// ---------------------------------------------------------------------------
+//
+//                                      ,`\
+//  L                              ...    /  M   M             k
+//  L      ooo   ggg  i  ccc     @ o o @.'   M\ /M  ooo  n nn  k k   ee  y   y
+//  L     o   o g   g . c      .' ( o )      M V M o   o n'  n kk   e__e y   y
+//  L     o   o g   g i c     /  (     )     M   M o   o n   n k k  e    y   y
+//  LLLLL  ooo   gggg i  ccc  \.' \ : /      M   M  ooo  n   n K  k  ee'  yyyy
+//                  g            nnn nnn                                    y
+//                gg                                                     yyy
+//
+// ------------------------------------------------------=--------------------
+//
+// Piyak - a program to monitor and log the effort on a kayak ergo.
+//
+// Copyright (c) 2017 Piers Barber   piers.barber@logicmonkey.co.uk
+//
+// ------------------------------------------------------=--------------------
+
 Analyse - data analysis part of the Piyak kayak simulator ergo software for
           use on Lawler ergos. This software reads activity_yyyymmddhhmm.csv
           files and calculates athlete power output. The calculation is
           given below and relies upon flywheel mass (to weigh it, you will
           have to dismantle your machine - a bit :)
-
-Copyright (c) 2017-18, 2020 Piers Barber
 
 This is free software released under the terms of the MIT licence
 

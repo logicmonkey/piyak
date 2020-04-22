@@ -1,13 +1,24 @@
 #!/usr/bin/env python3
 
 '''
-Piyak - a program to monitor and log the effort on a kayak ergo.
-        Python on Raspberry Pi, with a user interface implemented
-        in Kivy. The program should run in a dummy "demomode" if the
-        Raspberry Pi pigpio library is not found. This allows it to
-        be run/tested/modified on a platform other than Raspberry Pi
-
-Copyright (c) 2017, 2018 Piers Barber
+// ---------------------------------------------------------------------------
+//
+//                                      ,`\
+//  L                              ...    /  M   M             k
+//  L      ooo   ggg  i  ccc     @ o o @.'   M\ /M  ooo  n nn  k k   ee  y   y
+//  L     o   o g   g . c      .' ( o )      M V M o   o n'  n kk   e__e y   y
+//  L     o   o g   g i c     /  (     )     M   M o   o n   n k k  e    y   y
+//  LLLLL  ooo   gggg i  ccc  \.' \ : /      M   M  ooo  n   n K  k  ee'  yyyy
+//                  g            nnn nnn                                    y
+//                gg                                                     yyy
+//
+// ------------------------------------------------------=--------------------
+//
+// Piyak - a program to monitor and log the effort on a kayak ergo.
+//
+// Copyright (c) 2017-18, 2020 Piers Barber   piers.barber@logicmonkey.co.uk
+//
+// ------------------------------------------------------=--------------------
 
 This is free software released under the terms of the MIT licence
 
@@ -43,6 +54,9 @@ switch.
                    1       3      [5]     [7]      9
                   3V3    GPIO2                    GND
 '''
+
+import pigpio
+from gpio_pin import gpio_pin
 
 from kivy.app import App
 
@@ -80,7 +94,7 @@ class Piyak(BoxLayout):
     polyline  = ListProperty([])
     play_mode = NumericProperty(0)
 
-    global demomode, forensics
+    global forensics
 
     def __init__(self, **kwargs):
         super(Piyak, self).__init__(**kwargs)
@@ -89,10 +103,9 @@ class Piyak(BoxLayout):
         dtn = datetime.now()
         self.time_start = dtn
 
-        if not demomode:
-            GPIO_PIN    = 2
-            self.device = pigpio.pi()
-            self.pin    = gpio_pin(self.device, GPIO_PIN)
+        GPIO_PIN    = 2
+        self.device = pigpio.pi()
+        self.pin    = gpio_pin(self.device, GPIO_PIN)
 
         if forensics:
             # this is the raw data and timestamps file for post processing
@@ -163,25 +176,16 @@ class Piyak(BoxLayout):
             mins, secs = divmod(remr, 60)
             self.ids.i_elapsed.text = "{:02d}:{:02d}:{:02d}".format(hour, mins, secs)
 
-            if demomode:
-                # synthetic activity oscillates between 71ms and 79ms to simulate non-linear input
-                self.pin_delta.append((75000.0 + 4000.0*math.sin(self.pin_eventcount/5.0), time_now))
-                self.pin_eventcount += 1000000.0/(60.0*self.pin_delta[NEW][0])
+            # only update the event queue when one has occurred (event count on the real I/O pin changes)
+            if self.pin_eventcount != self.pin._eventcount and self.pin._delta != None:
+                # shift in the new measured rotation period on every update, along with a timestamp
+                self.pin_delta.append((self.pin._delta, time_now))
 
+                # as above, but needs to be sensitive to event count changes
                 if forensics:
                     self.forensics.write("{},{},{}\n".format(self.elapsed, int(self.pin_eventcount), int(self.pin_delta[NEW][0])))
-            else:
 
-                # only update the event queue when one has occurred (event count on the real I/O pin changes)
-                if self.pin_eventcount != self.pin._eventcount and self.pin._delta != None:
-                    # shift in the new measured rotation period on every update, along with a timestamp
-                    self.pin_delta.append((self.pin._delta, time_now))
-
-                    # as above, but needs to be sensitive to event count changes
-                    if forensics:
-                        self.forensics.write("{},{},{}\n".format(self.elapsed, int(self.pin_eventcount), int(self.pin_delta[NEW][0])))
-
-                self.pin_eventcount = self.pin._eventcount
+            self.pin_eventcount = self.pin._eventcount
 
             if self.pin_delta[NEW][0] != None and self.pin_eventcount != 0:
 
@@ -266,9 +270,8 @@ class Piyak(BoxLayout):
 
     def exit_cbf(self):
         # exit cleanly by turning off the pin activities and stopping the device
-        if not demomode:
-            self.pin.cancel()
-            self.device.stop()
+        self.pin.cancel()
+        self.device.stop()
 
         if forensics:
             self.forensics.close()
@@ -333,22 +336,14 @@ class PiyakApp(App):
         return Piyak()
 
 if __name__ == "__main__":
+    forensics = True
+
+    # make activities directory and bomb out if an error was anything other than
+    # it already exits
     try:
-        import pigpio
-        demomode = False
-        from gpio_pin import gpio_pin
-        forensics = True
-
-        # make activities directory and bomb out if an error was anything other than
-        # it already exits
-        try:
-            os.makedirs('activities')
-        except OSError as err:
-            if err.errno != errno.EEXIST:
-                raise
-
-    except:
-        demomode = True
-        forensics = False # enable for basic testing away from real hardware
+        os.makedirs('activities')
+    except OSError as err:
+        if err.errno != errno.EEXIST:
+            raise
 
     PiyakApp().run()
