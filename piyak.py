@@ -195,6 +195,8 @@ class Piyak(BoxLayout):
                 # using 750rpm = 11km/h as a model, km/h = rpm * 11/750
                 # then kph = 60*1E6/delta * 11/750 = 880000/delta
                 kph  = 880000.0 / self.pin_delta[NEW][0]     # 11km/h = 750rpm
+                # TCX files seem to like speed in m/s, so calculate that
+                mps  = 244444.4 / self.pin_delta[NEW][0]     # kph x 1000/(60*60)
                 # using 60 minutes * 750rpm = 11km, 1 rev = 11E3/(60*750) metres
                 # 1 rev = 11000/(60*750) = 11/45 = 0.2444m
                 dist = self.pin_eventcount * 0.2444444444
@@ -239,7 +241,7 @@ class Piyak(BoxLayout):
 
                 # check progress along the track (course)
                 if dist > (self.track[self.trackptr]['dist'] + self.lap_count*self.lap_distance):
-                    self.timestamps.append({'time': time_now.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3], 'speed': kph, 'dist': dist})
+                    self.timestamps.append({'time': time_now.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3], 'speed': mps, 'dist': dist})
                     # let the trackpointer roll over and update the lap count
                     self.polyline.append(self.track[self.trackptr]['x'])
                     self.polyline.append(self.track[self.trackptr]['y'])
