@@ -286,11 +286,12 @@ class Piyak(BoxLayout):
 
             max_speed = 0
             for x in self.timestamps:
-                if x['speed'] > max_speed:
+                if (x['speed'] > max_speed) and (x['speed'] >= 0) and (x['speed'] < 30):
                     max_speed = x['speed']
 
             calories  = 1000*self.elapsed.seconds/3600        # crude calc: 1000 calories/hour
             elevation = 0
+            heartrate = 150
 
             average_speed = total_distance / self.elapsed.seconds
 
@@ -310,6 +311,7 @@ class Piyak(BoxLayout):
                                self.track[tp%len(self.track)]['lon'],
                                elevation,
                                self.timestamps[tp]['dist'],
+                               heartrate,
                                self.timestamps[tp]['speed']))
 
             activity.write(tcx_postamble.format(average_speed))

@@ -48,7 +48,7 @@ tcx_preamble = """<?xml version="1.0" encoding="UTF-8"?>
   xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ns4="http://www.garmin.com/xmlschemas/ProfileExtension/v1">
   <Activities>
-    <Activity Sport="Kayaking">
+    <Activity Sport="Other">
       <Id>{}Z</Id>
       <Lap StartTime="{}Z">
         <TotalTimeSeconds>{}</TotalTimeSeconds>
@@ -68,6 +68,9 @@ tcx_trackpoint = """          <Trackpoint>
             </Position>
             <AltitudeMeters>{}</AltitudeMeters>
             <DistanceMeters>{}</DistanceMeters>
+            <HeartRateBpm>
+              <Value>{}</Value>
+            </HeartRateBpm>
             <Extensions>
               <ns3:TPX>
                 <ns3:Speed>{}</ns3:Speed>
@@ -84,7 +87,7 @@ tcx_postamble = """        </Track>
         </Extensions>
       </Lap>
       <Creator xsi:type="Device_t">
-        <Name>LogicMonkey Xayax One</Name>
+        <Name>LogicMonkey Piyak</Name>
         <UnitId>0000000001</UnitId>
         <ProductID>0000</ProductID>
         <Version>
