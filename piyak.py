@@ -226,8 +226,8 @@ class Piyak(BoxLayout):
 
                 # update the telemetry based on the numbers
                 self.needle            = -22.5 * hrpm
-                self.ids.i_speed.text  = '[b]{0:4.1f}[/b]km/h'.format(kph)
-                self.ids.i_dist.text   = '[b]{0:.0f}[/b]m'.format(dist)
+                self.ids.i_speed.text  = '[b]{:04.1f}[/b]km/h'.format(kph)
+                self.ids.i_dist.text   = '[b]{:.0f}[/b]m'.format(dist)
 
                 stroke_timedelta = self.stroke[1] - self.stroke[0] # the time between two local minima
                 stroke_period = stroke_timedelta.seconds + 1e-6*stroke_timedelta.microseconds
@@ -236,8 +236,8 @@ class Piyak(BoxLayout):
                 if stroke_timedelta != timedelta(0):
                     self.power.append(energy_in/stroke_period)
                     self.stroke_rate.append(30.0/stroke_period)
-                    self.ids.i_power.text  = '[b]{0:.0f}[/b]W'.format(sum(self.power)/self.power.maxlen)
-                    self.ids.i_stroke.text = '[b]{0:.0f}[/b]dspm'.format(sum(self.stroke_rate)/self.stroke_rate.maxlen)
+                    self.ids.i_power.text  = '[b]{:.0f}[/b]W'.format(sum(self.power)/self.power.maxlen)
+                    self.ids.i_stroke.text = '[b]{:.0f}[/b]dspm'.format(sum(self.stroke_rate)/self.stroke_rate.maxlen)
 
                 # check progress along the track (course)
                 if dist > (self.track[self.trackptr]['dist'] + self.lap_count*self.lap_distance):
