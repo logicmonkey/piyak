@@ -50,7 +50,33 @@ import math
 import re
 import matplotlib.pyplot as plt
 
-def calculate_power(energy, timestamp):
+def scan_data(filename):
+
+    # SI unit for moment of inertia is kg metres squared (not grammes)
+    MASS   = 4.360  # mass of Lawler flywheel in kilogrammes
+    RADIUS = 0.200  # radius of Lawler flywheel in metres
+    PI     = math.pi
+
+    timestamp = []
+    energy = []
+    rpm = []
+
+    for usec in open(filename):
+        period = int(usec)*1.0e-6
+        if period != 0.0:
+            # the microsecond rotation periods into seconds
+            if len(timestamp)==0:
+                timestamp.append(period)
+            else:
+                timestamp.append(timestamp[-1]+period)
+
+            # current rotation period to frequency in rpm
+            rpm.append(60.0/period)
+
+            # w  = 2*pi/period (angular velocity omega = 2 pi radians * revolutions/second)
+            # I  = 0.5*m*r^2 (half m radius squared)
+            # KE = 0.5*I*w^2 (half I omega squared)
+            energy.append(MASS*(RADIUS*PI/period)**2)
     '''
     Identify Individual Strokes
 
@@ -204,43 +230,11 @@ def calculate_power(energy, timestamp):
         fpower.append(psum/KERNEL)
         fstroke.append(ssum/KERNEL)
 
-    return fpower, fstroke
-
-def forensic(filename):
-
-    # SI unit for moment of inertia is kg metres squared (not grammes)
-    MASS   = 4.360  # mass of Lawler flywheel in kilogrammes
-    RADIUS = 0.200  # radius of Lawler flywheel in metres
-    PI     = math.pi
-
-    timestamp = []
-    energy = []
-    rpm = []
-
-    for usec in open(filename):
-        period = int(usec)*1.0e-6
-        if period != 0.0:
-            # the microsecond rotation periods into seconds
-            if len(timestamp)==0:
-                timestamp.append(period)
-            else:
-                timestamp.append(timestamp[-1]+period)
-
-            # current rotation period to frequency in rpm
-            rpm.append(60.0/period)
-
-            # w  = 2*pi/period (angular velocity omega = 2 pi radians * revolutions/second)
-            # I  = 0.5*m*r^2 (half m radius squared)
-            # KE = 0.5*I*w^2 (half I omega squared)
-            energy.append(MASS*(RADIUS*PI/period)**2)
-
-    fpower, fstroke = calculate_power(energy, timestamp)
-
     return timestamp, energy, rpm, fpower, fstroke
 
 def report(filename):
 
-    timestamp, energy, rpm, fpower, fstroke = forensic(filename)
+    timestamp, energy, rpm, fpower, fstroke = scan_data(filename)
 
     xlabel    = 'Time (seconds)'
     xtitle    = 'Data source: {}'.format(filename)

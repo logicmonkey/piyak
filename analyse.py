@@ -52,7 +52,7 @@ THE SOFTWARE.
     Draws a graph of power, stroke rate etc
 
   Usage:
-    analyse.py <activities/forensicfile>.csv
+    analyse.py <dat/activitydate>.dat
 '''
 
 import sys
@@ -61,13 +61,13 @@ import math
 import re
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
-from report import forensic
+from report import scan_data
 
 if __name__ == '__main__' :
 
     filename = sys.argv[1]
 
-    timestamp, energy, rpm, fpower, fstroke = forensic(filename)
+    timestamp, energy, rpm, fpower, fstroke = scan_data(filename)
 
     xlabel = 'Time (seconds)'
     xtitle = 'Data source: {}'.format(filename)
