@@ -57,26 +57,23 @@ def scan_data(filename):
     RADIUS = 0.200  # radius of Lawler flywheel in metres
     PI     = math.pi
 
-    timestamp = []
     energy = []
     rpm = []
+
+    ts = 0
 
     for usec in open(filename):
         period = int(usec)*1.0e-6
         if period != 0.0:
-            # the microsecond rotation periods into seconds
-            if len(timestamp)==0:
-                timestamp.append(period)
-            else:
-                timestamp.append(timestamp[-1]+period)
+            ts += period
 
             # current rotation period to frequency in rpm
-            rpm.append(60.0/period)
+            rpm.append((ts, 60.0/period))
 
             # w  = 2*pi/period (angular velocity omega = 2 pi radians * revolutions/second)
             # I  = 0.5*m*r^2 (half m radius squared)
             # KE = 0.5*I*w^2 (half I omega squared)
-            energy.append(MASS*(RADIUS*PI/period)**2)
+            energy.append((ts, MASS*(RADIUS*PI/period)**2))
     '''
     Identify Individual Strokes
 
@@ -167,74 +164,47 @@ def scan_data(filename):
     power = []
     stroke = []
 
-    looking_for_e1 = True     # start here in hunt for first local minimum
-    looking_for_e2 = False    # then alternate between this state and the next
-    looking_for_e3 = False
+    LOOKING_FOR_E1 = True     # start here in hunt for first local minimum
+    LOOKING_FOR_E2 = False    # then alternate between this state and the next
+    LOOKING_FOR_E3 = False
 
-    min_index = 0             # position of the last minimum
+    for ii, tup in enumerate(energy[:-1]): # loop over all i, i+1 pairs
 
-    for i, v in enumerate(energy[:-1]): # loop over all i, i+1 pairs
+        if LOOKING_FOR_E1 and tup[1] < energy[ii+1][1]:
+            local_min = tup
 
-        if looking_for_e1 and v < energy[i+1]:
-            local_min = (v, timestamp[i])
+            power.append(tup)
+            stroke.append(tup)
 
-            # pad all power entries up to the first local minimum with zero
-            for j in range(0, i - min_index):
-                power.append(0)
-                stroke.append(0)
+            LOOKING_FOR_E1 = False
+            LOOKING_FOR_E2 = True
 
-            min_index = i
+        elif LOOKING_FOR_E2 and tup[1] > energy[ii+1][1]:
+            local_max = tup
+            LOOKING_FOR_E2 = False
+            LOOKING_FOR_E3 = True
 
-            looking_for_e1 = False
-            looking_for_e2 = True
-
-        elif looking_for_e2 and v > energy[i+1]:
-            local_max = (v, timestamp[i])
-            looking_for_e2 = False
-            looking_for_e3 = True
-
-        elif looking_for_e3 and v < energy[i+1]:
-            e1, t1 = local_min
-            e2, t2 = local_max
-            e3, t3 = v, timestamp[i]
+        elif LOOKING_FOR_E3 and tup[1] < energy[ii+1][1]:
+            (t1, e1) = local_min
+            (t2, e2) = local_max
+            (t3, e3) = tup
 
             # we're at E3 in the data, so calculate the power for this stroke
             # and update the values from the E1 position to here
             pin = (e2-e1+(t2-t1)*(e2-e3)/(t3-t2))/(t3-t1) # eqs.(1,2)
 
-            for j in range(0, i - min_index):
-                power.append(pin)
-                stroke.append(30.0/(t3-t1)) # double strokes/min = strokes/30s
+            power.append((t3, pin))
+            stroke.append((t3, 30.0/(t3-t1))) # double strokes/min = strokes/30s
 
-            local_min = (e3, t3) # e3 is the next e1
-            min_index = i
-            looking_for_e2 = True
-            looking_for_e3 = False
+            local_min = (t3, e3) # e3 is the next e1
+            LOOKING_FOR_E2 = True
+            LOOKING_FOR_E3 = False
 
-    # replicate final entries in power to match the energy data set size
-    for i in range(0, len(energy) - len(power)):
-        power.append(pin)
-        stroke.append(0)
-
-    KERNEL=40
-    fpower = []
-    fstroke = []
-    for i, p in enumerate(power):
-        psum = 0
-        ssum = 0
-        for j in range(0, KERNEL):
-            if i > j:
-                psum += power[i-j]
-                ssum += stroke[i-j]
-
-        fpower.append(psum/KERNEL)
-        fstroke.append(ssum/KERNEL)
-
-    return timestamp, energy, rpm, fpower, fstroke
+    return energy, rpm, power, stroke
 
 def report(filename):
 
-    timestamp, energy, rpm, fpower, fstroke = scan_data(filename)
+    energy, rpm, power, stroke = scan_data(filename)
 
     xlabel    = 'Time (seconds)'
     xtitle    = 'Data source: {}'.format(filename)

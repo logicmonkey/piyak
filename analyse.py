@@ -67,7 +67,7 @@ if __name__ == '__main__' :
 
     filename = sys.argv[1]
 
-    timestamp, energy, rpm, fpower, fstroke = scan_data(filename)
+    energy, rpm, power, stroke = scan_data(filename)
 
     xlabel = 'Time (seconds)'
     xtitle = 'Data source: {}'.format(filename)
@@ -79,10 +79,19 @@ if __name__ == '__main__' :
     pwr_axes.set_ylabel('Power\n(watts)')
     stk_axes.set_ylabel('Double Strokes\n(per minute)')
 
-    rpm_axes.plot(timestamp, rpm, color='g')
-    eny_axes.plot(timestamp, energy, color='b')
-    pwr_axes.plot(timestamp, fpower, color='orange')
-    stk_axes.plot(timestamp, fstroke, color='gray')
+    x, y = zip(*rpm)
+    rpm_axes.plot(x, y, color='g')
+#    rpm_scat = rpm_axes.scatter(y, color='g', marker='.')
+
+    x, y = zip(*energy)
+    eny_axes.plot(x, y, color='b')
+#    eny_scat = eny_axes.scatter(y, color='b', marker='.')
+
+    x, y = zip(*power)
+    pwr_axes.plot(x, y, color='orange')
+
+    x, y = zip(*stroke)
+    stk_axes.plot(x, y, color='gray')
 
     rpm_axes.grid(visible=True)
     eny_axes.grid(visible=True)
@@ -92,10 +101,9 @@ if __name__ == '__main__' :
     rpm_axes.set_title(xtitle)
     stk_axes.set_xlabel(xlabel)
 
+    '''
     # ANNOTATION START - comment out between START and END for simple plot
     # create object for speed xy scatter because this can be queried and annotated
-    rpm_scat = rpm_axes.scatter(timestamp, rpm, color='g', marker='.')
-    eny_scat = eny_axes.scatter(timestamp, energy, color='b', marker='.')
 
     rpm_anno = rpm_axes.annotate("", # set the annotation text based on value
                    xy=(0,0), xytext=(20,20),
@@ -140,6 +148,7 @@ if __name__ == '__main__' :
 
     fig.canvas.mpl_connect("motion_notify_event", hover)
     # ANNOTATION END
+    '''
 
     plt.tight_layout()
     plt.show()
