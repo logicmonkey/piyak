@@ -218,13 +218,14 @@ def forensic(filename):
     rpm = []
 
     for usec in open(filename):
-        if usec != 'None' and usec != '0':
+        period = int(usec)*1.0e-6
+        if period != 0.0:
             # the microsecond rotation periods into seconds
-            period = int(usec)*1.0e-6
             if len(timestamp)==0:
                 timestamp.append(period)
             else:
                 timestamp.append(timestamp[-1]+period)
+
             # current rotation period to frequency in rpm
             rpm.append(60.0/period)
 
