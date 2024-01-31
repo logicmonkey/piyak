@@ -81,11 +81,11 @@ if __name__ == '__main__' :
 
     x, y = zip(*rpm)
     rpm_axes.plot(x, y, color='green')
-#    rpm_scat = rpm_axes.scatter(y, color='g', marker='.')
+    rpm_scat = rpm_axes.scatter(x, y, color='green', marker='.')
 
     x, y = zip(*energy)
     eny_axes.plot(x, y, color='blue')
-#    eny_scat = eny_axes.scatter(y, color='b', marker='.')
+    eny_scat = eny_axes.scatter(x, y, color='blue', marker='.')
 
     x, y = zip(*power)
     pwr_axes.plot(x, y, color='orange')
@@ -105,7 +105,6 @@ if __name__ == '__main__' :
     rpm_axes.set_title(xtitle)
     stk_axes.set_xlabel(xlabel)
 
-    '''
     # ANNOTATION START - comment out between START and END for simple plot
     # create object for speed xy scatter because this can be queried and annotated
 
@@ -152,7 +151,6 @@ if __name__ == '__main__' :
 
     fig.canvas.mpl_connect("motion_notify_event", hover)
     # ANNOTATION END
-    '''
 
     plt.tight_layout()
     plt.show()
