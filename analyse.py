@@ -67,7 +67,7 @@ if __name__ == '__main__' :
 
     filename = sys.argv[1]
 
-    energy, rpm, power, stroke = scan_data(filename)
+    energy, rpm, power, stroke, power_a, power_b = scan_data(filename)
 
     xlabel = 'Time (seconds)'
     xtitle = 'Data source: {}'.format(filename)
@@ -80,15 +80,19 @@ if __name__ == '__main__' :
     stk_axes.set_ylabel('Double Strokes\n(per minute)')
 
     x, y = zip(*rpm)
-    rpm_axes.plot(x, y, color='g')
+    rpm_axes.plot(x, y, color='green')
 #    rpm_scat = rpm_axes.scatter(y, color='g', marker='.')
 
     x, y = zip(*energy)
-    eny_axes.plot(x, y, color='b')
+    eny_axes.plot(x, y, color='blue')
 #    eny_scat = eny_axes.scatter(y, color='b', marker='.')
 
     x, y = zip(*power)
     pwr_axes.plot(x, y, color='orange')
+    x, y = zip(*power_a)
+    pwr_axes.plot(x, y, color='red')
+    x, y = zip(*power_b)
+    pwr_axes.plot(x, y, color='green')
 
     x, y = zip(*stroke)
     stk_axes.plot(x, y, color='gray')

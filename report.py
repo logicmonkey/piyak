@@ -161,14 +161,18 @@ def scan_data(filename):
 
     '''
 
-    power = []
-    stroke = []
+    power   = []
+    power_a = []
+    power_b = []
+    stroke  = []
 
     LOOKING_FOR_E1 = True     # start here in hunt for first local minimum
     LOOKING_FOR_E2 = False    # then alternate between this state and the next
     LOOKING_FOR_E3 = False
 
-    for ii, tup in enumerate(energy[:-1]): # loop over all i, i+1 pairs
+    ab_sel = 0
+
+    for ii, tup in enumerate(energy[:-1]): # loop over all ii, ii+1 pairs
 
         if LOOKING_FOR_E1 and tup[1] < energy[ii+1][1]:
             local_min = tup
@@ -190,21 +194,34 @@ def scan_data(filename):
             (t3, e3) = tup
 
             # we're at E3 in the data, so calculate the power for this stroke
-            # and update the values from the E1 position to here
-            pin = (e2-e1+(t2-t1)*(e2-e3)/(t3-t2))/(t3-t1) # eqs.(1,2)
+            pwr_over_stroke = (e2-e1+(t2-t1)*(e2-e3)/(t3-t2))/(t3-t1) # eqs.(1,2)
+            pwr_over_pull = (e2-e1+(t2-t1)*(e2-e3)/(t3-t2))/(t2-t1) # eqs.(1,2)
 
-            power.append((t3, pin))
-            stroke.append((t3, 30.0/(t3-t1))) # double strokes/min = strokes/30s
+            power.append((t2, pwr_over_stroke))
+            stroke.append((t2, 30.0/(t3-t1))) # double strokes/min = strokes/30s
+
+            if ab_sel==0:
+                power_a.append((t1, 0))
+                power_a.append((t2, pwr_over_pull))
+                power_a.append((t2, 0))
+                #power_a.append((t2, power_b[-1][-1]))
+                ab_sel = 1
+            else:
+                power_b.append((t1, 0))
+                power_b.append((t2, pwr_over_pull))
+                power_b.append((t2, 0))
+                #power_a.append((t2, power_a[-1][-1]))
+                ab_sel = 0
 
             local_min = (t3, e3) # e3 is the next e1
             LOOKING_FOR_E2 = True
             LOOKING_FOR_E3 = False
 
-    return energy, rpm, power, stroke
+    return energy, rpm, power, stroke, power_a, power_b
 
 def report(filename):
 
-    energy, rpm, power, stroke = scan_data(filename)
+    energy, rpm, power, stroke, power_a, power_b = scan_data(filename)
 
     xlabel    = 'Time (seconds)'
     xtitle    = 'Data source: {}'.format(filename)
