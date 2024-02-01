@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 '''
 // ---------------------------------------------------------------------------
 //
@@ -323,8 +321,8 @@ class Piyak(BoxLayout):
             print("Total laps: {}".format(total_distance/self.lap_distance))
             print("File: {}".format('activities/activity_{}.tcx'.format(self.time_start.strftime("%Y%m%d%H%M"))))
 
-            # now read in the full detail from the dat file and post process it
-            report('dat/{}.dat'.format(self.time_start.strftime("%Y%m%d%H%M")))
+            # now read in the full detail from the session dat file and post process it
+            report(self.time_start.strftime("%Y%m%d%H%M"))
 
         App.get_running_app().stop()
 

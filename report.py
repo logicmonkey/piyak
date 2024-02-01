@@ -50,7 +50,7 @@ import math
 import re
 import matplotlib.pyplot as plt
 
-def scan_data(filename):
+def scan_data(session):
 
     # SI unit for moment of inertia is kg metres squared (not grammes)
     MASS   = 4.360  # mass of Lawler flywheel in kilogrammes
@@ -62,7 +62,7 @@ def scan_data(filename):
 
     ts = 0
 
-    for usec in open(filename):
+    for usec in open("dat/" + session + ".dat"):
         period = int(usec)*1.0e-6
         if period != 0.0:
             ts += period
@@ -219,12 +219,12 @@ def scan_data(filename):
 
     return energy, rpm, power, stroke, power_a, power_b
 
-def report(filename):
+def report(session):
 
-    energy, rpm, power, stroke, power_a, power_b = scan_data(filename)
+    energy, rpm, power, stroke, power_a, power_b = scan_data(session)
 
     xlabel    = 'Time (seconds)'
-    xtitle    = 'Data source: {}'.format(filename)
+    xtitle    = 'Session: {}'.format(session)
     rpm_label = 'Revolutions\n(per minute)'
     eny_label = 'Rotational\nEnergy\n(joules)'
     pwr_label = 'Power\n(watts)'
@@ -257,6 +257,6 @@ def report(filename):
 
     plt.tight_layout()
 
-    fig.savefig(re.compile('dat').sub('png', filename))
+    fig.savefig("activities/" + session + ".png")
     #plt.show()
     plt.close(fig)

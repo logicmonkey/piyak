@@ -65,12 +65,12 @@ from report import scan_data
 
 if __name__ == '__main__' :
 
-    filename = sys.argv[1]
+    session = sys.argv[1]
 
-    energy, rpm, power, stroke, power_a, power_b = scan_data(filename)
+    energy, rpm, power, stroke, power_a, power_b = scan_data(session)
 
     xlabel = 'Time (seconds)'
-    xtitle = 'Data source: {}'.format(filename)
+    xtitle = 'Session: {}'.format(session)
 
     fig, (rpm_axes, eny_axes, pwr_axes, stk_axes) = plt.subplots(4, sharex=True)
 
