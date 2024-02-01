@@ -232,19 +232,23 @@ def report(filename):
 
     fig, (rpm_axes, eny_axes, pwr_axes, stk_axes) = plt.subplots(4, sharex=True)
 
-    rpm_dots, = rpm_axes.plot(timestamp, rpm, 'g', marker='.', label='samples')
+    x, y = zip(*rpm)
+    rpm_dots, = rpm_axes.plot(x, y, 'green', marker='.', label='samples')
     rpm_axes.grid(b=True)
     rpm_axes.set_ylabel(rpm_label)
 
-    eny_line, = eny_axes.plot(timestamp, energy, 'b', label='line')
+    x, y = zip(*energy)
+    eny_line, = eny_axes.plot(x, y, 'blue', label='line')
     eny_axes.grid(b=True)
     eny_axes.set_ylabel(eny_label)
 
-    pwr_axes.plot(timestamp, fpower, color='orange')
+    x, y = zip(*power)
+    pwr_axes.plot(x, y, color='orange')
     pwr_axes.grid(b=True)
     pwr_axes.set_ylabel(pwr_label)
 
-    stk_axes.plot(timestamp, fstroke, color='gray')
+    x, y = zip(*stroke)
+    stk_axes.plot(x, y, color='gray')
     stk_axes.grid(b=True)
     stk_axes.set_ylabel(stk_label)
 
@@ -253,6 +257,6 @@ def report(filename):
 
     plt.tight_layout()
 
-    fig.savefig(re.compile('csv').sub('png', filename))
+    fig.savefig(re.compile('dat').sub('png', filename))
     #plt.show()
     plt.close(fig)
