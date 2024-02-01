@@ -161,8 +161,14 @@ class Piyak(BoxLayout):
             # w  = 2*pi/period (angular velocity omega = 2 pi radians * revolutions/second)
             # I  = 0.5*m*r^2 (half m radius squared)
             # KE = 0.5*I*w^2 (half I omega squared)
+            # return mass*(radius*math.pi/period)**2
 
-            return mass*(radius*math.pi/period)**2
+            # precalc the numerator for speed
+            # return 1721259007550/(rotation_time * rotation_time)
+
+            # alternatively do the divide and return the square
+            t = 1311967.60918/rotation_time
+            return t**2
 
         if self.play_mode == 1:
             time_now       = datetime.now()

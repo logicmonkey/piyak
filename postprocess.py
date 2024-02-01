@@ -72,7 +72,14 @@ def scan_data(session):
             # w  = 2*pi/period (angular velocity omega = 2 pi radians * revolutions/second)
             # I  = 0.5*m*r^2 (half m radius squared)
             # KE = 0.5*I*w^2 (half I omega squared)
-            energy.append((ts, MASS*(RADIUS*PI/period)**2))
+            # energy.append((ts, MASS*(RADIUS*PI/period)**2))
+
+            # precalc energy numerator
+            # energy.append((ts, 1721259007550/(int(usec) * int(usec))))
+
+            t = 1311967.60918/int(usec) # alternative uses a square calc
+            energy.append((ts, t**2))
+
     '''
     Identify Individual Strokes
 
