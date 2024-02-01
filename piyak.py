@@ -94,8 +94,6 @@ class Piyak(BoxLayout):
     polyline  = ListProperty([])
     play_mode = NumericProperty(0)
 
-    global forensics
-
     def __init__(self, **kwargs):
         super(Piyak, self).__init__(**kwargs)
         Clock.schedule_interval(self.update, 1./60.)
@@ -107,9 +105,8 @@ class Piyak(BoxLayout):
         self.device = pigpio.pi()
         self.pin    = gpio_pin(self.device, GPIO_PIN)
 
-        if forensics:
-            # this is the raw data and timestamps file for post processing
-            self.forensics = open('activities/activity_{}.csv'.format(self.time_start.strftime("%Y%m%d%H%M")), 'w')
+        # this is the raw data of flywheel rotation periods
+        self.datfile = open('dat/{}.dat'.format(self.time_start.strftime("%Y%m%d%H%M")), 'w')
 
         self.elapsed        = timedelta(0)
         self.pin_delta      = deque([(1,0),(1,0),(1,0)], 3) # double ended queue = shift register 3 deep
@@ -182,8 +179,7 @@ class Piyak(BoxLayout):
                 self.pin_delta.append((self.pin._delta, time_now))
 
                 # as above, but needs to be sensitive to event count changes
-                if forensics:
-                    self.forensics.write("{},{},{}\n".format(self.elapsed, int(self.pin_eventcount), int(self.pin_delta[NEW][0])))
+                self.datfile.write("{}\n".format(int(self.pin_delta[NEW][0])))
 
             self.pin_eventcount = self.pin._eventcount
 
@@ -220,7 +216,7 @@ class Piyak(BoxLayout):
                 tsetup = power_timedelta.seconds + 1e-6*power_timedelta.microseconds
 
                 energy_in = 0
-                # this calculation is based upon my own analysis as given in forensic.py eqs (1) & (2)
+                # this calculation is based upon my own analysis as given in report.py eqs (1) & (2)
                 if tsetup != 0: # check for zero divide
                     energy_in = self.rot_ke_max - self.rot_ke_min[0] + tpower/tsetup * (self.rot_ke_max - self.rot_ke_min[1])
 
@@ -274,9 +270,7 @@ class Piyak(BoxLayout):
         # exit cleanly by turning off the pin activities and stopping the device
         self.pin.cancel()
         self.device.stop()
-
-        if forensics:
-            self.forensics.close()
+        self.datfile.close()
 
         if self.elapsed.seconds > 0:
 
@@ -329,9 +323,8 @@ class Piyak(BoxLayout):
             print("Total laps: {}".format(total_distance/self.lap_distance))
             print("File: {}".format('activities/activity_{}.tcx'.format(self.time_start.strftime("%Y%m%d%H%M"))))
 
-            # now read in the full detail from the csv file and post process it
-            if forensics:
-                report('activities/activity_{}.csv'.format(self.time_start.strftime("%Y%m%d%H%M")))
+            # now read in the full detail from the dat file and post process it
+            report('dat/{}.dat'.format(self.time_start.strftime("%Y%m%d%H%M")))
 
         App.get_running_app().stop()
 
@@ -340,12 +333,16 @@ class PiyakApp(App):
         return Piyak()
 
 if __name__ == "__main__":
-    forensics = True
 
-    # make activities directory and bomb out if an error was anything other than
+    # make activities and dat directories and bomb out if an error was anything other than
     # it already exits
     try:
         os.makedirs('activities')
+    except OSError as err:
+        if err.errno != errno.EEXIST:
+            raise
+    try:
+        os.makedirs('dat')
     except OSError as err:
         if err.errno != errno.EEXIST:
             raise
