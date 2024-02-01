@@ -14,15 +14,9 @@
 //
 // Piyak - a program to monitor and log the effort on a kayak ergo.
 //
-// Copyright (c) 2017-18 Piers Barber   piers.barber@logicmonkey.co.uk
+// Copyright (c) 2017-24 Piers Barber   piers.barber@logicmonkey.co.uk
 //
 // ------------------------------------------------------=--------------------
-
-Forensic - data analysis part of the Piyak kayak simulator ergo software for
-           use on Lawler ergos. This software reads activity_yyyymmddhhmm.csv
-           files and calculates athlete power output. The calculation is
-           given below and relies upon flywheel mass (to weigh it, you will
-           have to dismantle your machine - a bit :)
 
 This is free software released under the terms of the MIT licence
 
@@ -45,9 +39,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 '''
 
+# Post Process
+# Data analysis part of the Piyak kayak simulator ergo software for use on Lawler
+# ergos. This software reads activity_yyyymmddhhmm.csv files and calculates
+# athlete power output. The calculation is given below and relies upon flywheel
+# mass (to weigh it, you will have to dismantle your machine - a bit :)
+
 import sys
 import math
-import re
 import matplotlib.pyplot as plt
 
 def scan_data(session):
@@ -218,45 +217,3 @@ def scan_data(session):
             LOOKING_FOR_E3 = False
 
     return energy, rpm, power, stroke, power_a, power_b
-
-def report(session):
-
-    energy, rpm, power, stroke, power_a, power_b = scan_data(session)
-
-    xlabel    = 'Time (seconds)'
-    xtitle    = 'Session: {}'.format(session)
-    rpm_label = 'Revolutions\n(per minute)'
-    eny_label = 'Rotational\nEnergy\n(joules)'
-    pwr_label = 'Power\n(watts)'
-    stk_label = 'Double Strokes\n(per minute)'
-
-    fig, (rpm_axes, eny_axes, pwr_axes, stk_axes) = plt.subplots(4, sharex=True)
-
-    x, y = zip(*rpm)
-    rpm_dots, = rpm_axes.plot(x, y, 'green', marker='.', label='samples')
-    rpm_axes.grid(b=True)
-    rpm_axes.set_ylabel(rpm_label)
-
-    x, y = zip(*energy)
-    eny_line, = eny_axes.plot(x, y, 'blue', label='line')
-    eny_axes.grid(b=True)
-    eny_axes.set_ylabel(eny_label)
-
-    x, y = zip(*power)
-    pwr_axes.plot(x, y, color='orange')
-    pwr_axes.grid(b=True)
-    pwr_axes.set_ylabel(pwr_label)
-
-    x, y = zip(*stroke)
-    stk_axes.plot(x, y, color='gray')
-    stk_axes.grid(b=True)
-    stk_axes.set_ylabel(stk_label)
-
-    rpm_axes.set_title(xtitle)
-    stk_axes.set_xlabel(xlabel)
-
-    plt.tight_layout()
-
-    fig.savefig("activities/" + session + ".png")
-    #plt.show()
-    plt.close(fig)
