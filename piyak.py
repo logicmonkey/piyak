@@ -85,6 +85,10 @@ from collections import deque
 
 from generate_track import generate_track
 from tcx import tcx_preamble, tcx_trackpoint, tcx_postamble
+
+import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
+
 from postprocess import scan_data
 
 class Piyak(BoxLayout):
@@ -242,47 +246,6 @@ class Piyak(BoxLayout):
                     self.polyline.append(self.track[self.trackptr]['y'])
                     self.lap_count, self.trackptr = divmod(len(self.timestamps), len(self.track))
 
-    def report(session):
-        energy, rpm, power, stroke, power_a, power_b = scan_data(session)
-
-        xlabel    = 'Time (seconds)'
-        xtitle    = 'Session: {}'.format(session)
-        rpm_label = 'Revolutions\n(per minute)'
-        eny_label = 'Rotational\nEnergy\n(joules)'
-        pwr_label = 'Power\n(watts)'
-        stk_label = 'Double Strokes\n(per minute)'
-
-        fig, (rpm_axes, eny_axes, pwr_axes, stk_axes) = plt.subplots(4, sharex=True)
-
-        x, y = zip(*rpm)
-        rpm_dots, = rpm_axes.plot(x, y, 'green', marker='.', label='samples')
-        rpm_axes.grid(b=True)
-        rpm_axes.set_ylabel(rpm_label)
-
-        x, y = zip(*energy)
-        eny_line, = eny_axes.plot(x, y, 'blue', label='line')
-        eny_axes.grid(b=True)
-        eny_axes.set_ylabel(eny_label)
-
-        x, y = zip(*power)
-        pwr_axes.plot(x, y, color='orange')
-        pwr_axes.grid(b=True)
-        pwr_axes.set_ylabel(pwr_label)
-
-        x, y = zip(*stroke)
-        stk_axes.plot(x, y, color='gray')
-        stk_axes.grid(b=True)
-        stk_axes.set_ylabel(stk_label)
-
-        rpm_axes.set_title(xtitle)
-        stk_axes.set_xlabel(xlabel)
-
-        plt.tight_layout()
-
-        fig.savefig("activities/" + session + ".png")
-        #plt.show()
-        plt.close(fig)
-
     def playpause_cbf(self):
         if self.play_mode == 0:
             self.play_mode = 1
@@ -320,6 +283,8 @@ class Piyak(BoxLayout):
             # -------------------------------------------------------------------------
             # the app has run, now generate the activity file in tcx format
 
+            session = self.time_start.strftime("%Y%m%d%H%M")
+
             max_speed = 0
             for x in self.timestamps:
                 if (x['speed'] > max_speed) and (x['speed'] >= 0) and (x['speed'] < 30):
@@ -333,7 +298,7 @@ class Piyak(BoxLayout):
 
             time_start_str = self.time_start.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] # format for tcx file
 
-            activity = open('activities/activity_{}.tcx'.format(self.time_start.strftime("%Y%m%d%H%M")), 'w')
+            activity = open('activities/activity_{}.tcx'.format(session), 'w')
             activity.write(tcx_preamble.format(time_start_str,
                                                time_start_str,
                                                self.elapsed.seconds,
@@ -361,10 +326,51 @@ class Piyak(BoxLayout):
             print("Total revs: {}".format(total_revs))
             print("Lap length: {}".format(self.lap_distance))
             print("Total laps: {}".format(total_distance/self.lap_distance))
-            print("File: {}".format('activities/activity_{}.tcx'.format(self.time_start.strftime("%Y%m%d%H%M"))))
+            print("File: {}".format('activities/activity_{}.tcx'.format(session)))
 
-            # now read in the full detail from the session dat file and post process it
-            report(self.time_start.strftime("%Y%m%d%H%M"))
+            # -------------------------------------------------------------------------
+            # now read in the full detail from the session dat file and post-process it
+
+            energy, rpm, power, stroke, power_a, power_b = scan_data(session)
+
+            xlabel    = 'Time (seconds)'
+            xtitle    = 'Session: {}'.format(session)
+            rpm_label = 'Revolutions\n(per minute)'
+            eny_label = 'Rotational\nEnergy\n(joules)'
+            pwr_label = 'Power\n(watts)'
+            stk_label = 'Double Strokes\n(per minute)'
+
+            fig, (rpm_axes, eny_axes, pwr_axes, stk_axes) = plt.subplots(4, sharex=True)
+
+            x, y = zip(*rpm)
+            rpm_dots, = rpm_axes.plot(x, y, 'green', marker='.', label='samples')
+            rpm_axes.grid(b=True)
+            rpm_axes.set_ylabel(rpm_label)
+
+            x, y = zip(*energy)
+            eny_line, = eny_axes.plot(x, y, 'blue', label='line')
+            eny_axes.grid(b=True)
+            eny_axes.set_ylabel(eny_label)
+
+            x, y = zip(*power)
+            pwr_axes.plot(x, y, color='orange')
+            pwr_axes.grid(b=True)
+            pwr_axes.set_ylabel(pwr_label)
+
+            x, y = zip(*stroke)
+            stk_axes.plot(x, y, color='gray')
+            stk_axes.grid(b=True)
+            stk_axes.set_ylabel(stk_label)
+
+            rpm_axes.set_title(xtitle)
+            stk_axes.set_xlabel(xlabel)
+
+            plt.tight_layout()
+
+            fig.savefig("activities/" + session + ".png")
+            #plt.show()
+            plt.close(fig)
+
 
         App.get_running_app().stop()
 
