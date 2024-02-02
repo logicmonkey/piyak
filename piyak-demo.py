@@ -234,55 +234,6 @@ class Piyak(BoxLayout):
         self.time_start         = datetime.now()
 
     def exit_cbf(self):
-        if self.elapsed.seconds > 0:
-
-            total_revs     = self.pin_eventcount
-            total_distance = self.pin_eventcount * 0.2444444444
-
-            # -------------------------------------------------------------------------
-            # the app has run, now generate the activity file in tcx format
-
-            max_speed = 0
-            for x in self.timestamps:
-                if x['speed'] > max_speed:
-                    max_speed = x['speed']
-
-            calories  = 1000*self.elapsed.seconds/3600        # crude calc: 1000 calories/hour
-            elevation = 0
-
-            average_speed = total_distance / self.elapsed.seconds
-
-            time_start_str = self.time_start.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] # format for tcx file
-
-            activity = open('activities/activity_{}.tcx'.format(self.time_start.strftime("%Y%m%d%H%M")), 'w')
-            activity.write(tcx_preamble.format(time_start_str,
-                                               time_start_str,
-                                               self.elapsed.seconds,
-                                               total_distance,
-                                               max_speed,
-                                               calories))
-
-            for tp in range(len(self.timestamps)): # loop over all trackpoints reached
-                activity.write(tcx_trackpoint.format(self.timestamps[tp]['time'],
-                               self.track[tp%len(self.track)]['lat'],
-                               self.track[tp%len(self.track)]['lon'],
-                               elevation,
-                               self.timestamps[tp]['dist'],
-                               self.timestamps[tp]['speed']))
-
-            activity.write(tcx_postamble.format(average_speed))
-            activity.close()
-
-            print("Total distance: {}".format(total_distance))
-            hour, remr = divmod(self.elapsed.seconds, 60*60)
-            mins, secs = divmod(remr, 60)
-            print("Total time: {:02d}:{:02d}:{:02d}".format(hour, mins, secs))
-            print("Average speed: {}".format(average_speed))
-            print("Total revs: {}".format(total_revs))
-            print("Lap length: {}".format(self.lap_distance))
-            print("Total laps: {}".format(total_distance/self.lap_distance))
-            print("File: {}".format('activities/activity_{}.tcx'.format(self.time_start.strftime("%Y%m%d%H%M"))))
-
         App.get_running_app().stop()
 
 class PiyakApp(App):
