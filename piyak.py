@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 '''
 // ---------------------------------------------------------------------------
 //
@@ -86,15 +85,17 @@ from collections import deque
 
 from generate_track import generate_track
 from tcx import tcx_preamble, tcx_trackpoint, tcx_postamble
-from report import report
+
+import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
+
+from postprocess import scan_data
 
 class Piyak(BoxLayout):
 
     needle    = NumericProperty(0)
     polyline  = ListProperty([])
     play_mode = NumericProperty(0)
-
-    global forensics
 
     def __init__(self, **kwargs):
         super(Piyak, self).__init__(**kwargs)
@@ -107,9 +108,8 @@ class Piyak(BoxLayout):
         self.device = pigpio.pi()
         self.pin    = gpio_pin(self.device, GPIO_PIN)
 
-        if forensics:
-            # this is the raw data and timestamps file for post processing
-            self.forensics = open('activities/activity_{}.csv'.format(self.time_start.strftime("%Y%m%d%H%M")), 'w')
+        # this is the raw data of flywheel rotation periods
+        self.datfile = open('dat/{}.dat'.format(self.time_start.strftime("%Y%m%d%H%M")), 'w')
 
         self.elapsed        = timedelta(0)
         self.pin_delta      = deque([(1,0),(1,0),(1,0)], 3) # double ended queue = shift register 3 deep
@@ -161,8 +161,14 @@ class Piyak(BoxLayout):
             # w  = 2*pi/period (angular velocity omega = 2 pi radians * revolutions/second)
             # I  = 0.5*m*r^2 (half m radius squared)
             # KE = 0.5*I*w^2 (half I omega squared)
+            # return mass*(radius*math.pi/period)**2
 
-            return mass*(radius*math.pi/period)**2
+            # precalc the numerator for speed
+            # return 1721259007550/(rotation_time * rotation_time)
+
+            # alternatively do the divide and return the square
+            t = 1311967.60918/rotation_time
+            return t**2
 
         if self.play_mode == 1:
             time_now       = datetime.now()
@@ -182,8 +188,7 @@ class Piyak(BoxLayout):
                 self.pin_delta.append((self.pin._delta, time_now))
 
                 # as above, but needs to be sensitive to event count changes
-                if forensics:
-                    self.forensics.write("{},{},{}\n".format(self.elapsed, int(self.pin_eventcount), int(self.pin_delta[NEW][0])))
+                self.datfile.write("{}\n".format(int(self.pin_delta[NEW][0])))
 
             self.pin_eventcount = self.pin._eventcount
 
@@ -220,7 +225,7 @@ class Piyak(BoxLayout):
                 tsetup = power_timedelta.seconds + 1e-6*power_timedelta.microseconds
 
                 energy_in = 0
-                # this calculation is based upon my own analysis as given in forensic.py eqs (1) & (2)
+                # this calculation is based upon my own analysis as given in report.py eqs (1) & (2)
                 if tsetup != 0: # check for zero divide
                     energy_in = self.rot_ke_max - self.rot_ke_min[0] + tpower/tsetup * (self.rot_ke_max - self.rot_ke_min[1])
 
@@ -274,9 +279,7 @@ class Piyak(BoxLayout):
         # exit cleanly by turning off the pin activities and stopping the device
         self.pin.cancel()
         self.device.stop()
-
-        if forensics:
-            self.forensics.close()
+        self.datfile.close()
 
         if self.elapsed.seconds > 0:
 
@@ -285,6 +288,8 @@ class Piyak(BoxLayout):
 
             # -------------------------------------------------------------------------
             # the app has run, now generate the activity file in tcx format
+
+            session = self.time_start.strftime("%Y%m%d%H%M")
 
             max_speed = 0
             for x in self.timestamps:
@@ -299,7 +304,7 @@ class Piyak(BoxLayout):
 
             time_start_str = self.time_start.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] # format for tcx file
 
-            activity = open('activities/activity_{}.tcx'.format(self.time_start.strftime("%Y%m%d%H%M")), 'w')
+            activity = open('activities/activity_{}.tcx'.format(session), 'w')
             activity.write(tcx_preamble.format(time_start_str,
                                                time_start_str,
                                                self.elapsed.seconds,
@@ -327,11 +332,51 @@ class Piyak(BoxLayout):
             print("Total revs: {}".format(total_revs))
             print("Lap length: {}".format(self.lap_distance))
             print("Total laps: {}".format(total_distance/self.lap_distance))
-            print("File: {}".format('activities/activity_{}.tcx'.format(self.time_start.strftime("%Y%m%d%H%M"))))
+            print("File: {}".format('activities/activity_{}.tcx'.format(session)))
 
-            # now read in the full detail from the csv file and post process it
-            if forensics:
-                report('activities/activity_{}.csv'.format(self.time_start.strftime("%Y%m%d%H%M")))
+            # -------------------------------------------------------------------------
+            # now read in the full detail from the session dat file and post-process it
+
+            energy, rpm, power, stroke, power_a, power_b = scan_data(session)
+
+            xlabel    = 'Time (seconds)'
+            xtitle    = 'Session: {}'.format(session)
+            rpm_label = 'Revolutions\n(per minute)'
+            eny_label = 'Rotational\nEnergy\n(joules)'
+            pwr_label = 'Power\n(watts)'
+            stk_label = 'Double Strokes\n(per minute)'
+
+            fig, (rpm_axes, eny_axes, pwr_axes, stk_axes) = plt.subplots(4, sharex=True)
+
+            x, y = zip(*rpm)
+            rpm_dots, = rpm_axes.plot(x, y, 'green', marker='.', label='samples')
+            rpm_axes.grid(b=True)
+            rpm_axes.set_ylabel(rpm_label)
+
+            x, y = zip(*energy)
+            eny_line, = eny_axes.plot(x, y, 'blue', label='line')
+            eny_axes.grid(b=True)
+            eny_axes.set_ylabel(eny_label)
+
+            x, y = zip(*power)
+            pwr_axes.plot(x, y, color='orange')
+            pwr_axes.grid(b=True)
+            pwr_axes.set_ylabel(pwr_label)
+
+            x, y = zip(*stroke)
+            stk_axes.plot(x, y, color='gray')
+            stk_axes.grid(b=True)
+            stk_axes.set_ylabel(stk_label)
+
+            rpm_axes.set_title(xtitle)
+            stk_axes.set_xlabel(xlabel)
+
+            plt.tight_layout()
+
+            fig.savefig("activities/" + session + ".png")
+            #plt.show()
+            plt.close(fig)
+
 
         App.get_running_app().stop()
 
@@ -340,12 +385,16 @@ class PiyakApp(App):
         return Piyak()
 
 if __name__ == "__main__":
-    forensics = True
 
-    # make activities directory and bomb out if an error was anything other than
+    # make activities and dat directories and bomb out if an error was anything other than
     # it already exits
     try:
         os.makedirs('activities')
+    except OSError as err:
+        if err.errno != errno.EEXIST:
+            raise
+    try:
+        os.makedirs('dat')
     except OSError as err:
         if err.errno != errno.EEXIST:
             raise

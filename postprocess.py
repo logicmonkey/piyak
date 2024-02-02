@@ -14,15 +14,9 @@
 //
 // Piyak - a program to monitor and log the effort on a kayak ergo.
 //
-// Copyright (c) 2017-18 Piers Barber   piers.barber@logicmonkey.co.uk
+// Copyright (c) 2017-24 Piers Barber   piers.barber@logicmonkey.co.uk
 //
 // ------------------------------------------------------=--------------------
-
-Forensic - data analysis part of the Piyak kayak simulator ergo software for
-           use on Lawler ergos. This software reads activity_yyyymmddhhmm.csv
-           files and calculates athlete power output. The calculation is
-           given below and relies upon flywheel mass (to weigh it, you will
-           have to dismantle your machine - a bit :)
 
 This is free software released under the terms of the MIT licence
 
@@ -45,13 +39,47 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 '''
 
+# Post Process
+# Data analysis part of the Piyak kayak simulator ergo software for use on Lawler
+# ergos. This software reads activity_yyyymmddhhmm.csv files and calculates
+# athlete power output. The calculation is given below and relies upon flywheel
+# mass (to weigh it, you will have to dismantle your machine - a bit :)
+
 import sys
-import csv
 import math
-import re
 import matplotlib.pyplot as plt
 
-def calculate_power(energy, timestamp):
+def scan_data(session):
+
+    # SI unit for moment of inertia is kg metres squared (not grammes)
+    MASS   = 4.360  # mass of Lawler flywheel in kilogrammes
+    RADIUS = 0.200  # radius of Lawler flywheel in metres
+    PI     = math.pi
+
+    energy = []
+    rpm = []
+
+    ts = 0
+
+    for usec in open("dat/" + session + ".dat"):
+        period = int(usec)*1.0e-6
+        if period != 0.0:
+            ts += period
+
+            # current rotation period to frequency in rpm
+            rpm.append((ts, 60.0/period))
+
+            # w  = 2*pi/period (angular velocity omega = 2 pi radians * revolutions/second)
+            # I  = 0.5*m*r^2 (half m radius squared)
+            # KE = 0.5*I*w^2 (half I omega squared)
+            # energy.append((ts, MASS*(RADIUS*PI/period)**2))
+
+            # precalc energy numerator
+            # energy.append((ts, 1721259007550/(int(usec) * int(usec))))
+
+            t = 1311967.60918/int(usec) # alternative uses a square calc
+            energy.append((ts, t**2))
+
     '''
     Identify Individual Strokes
 
@@ -139,140 +167,60 @@ def calculate_power(energy, timestamp):
 
     '''
 
-    power = []
-    stroke = []
+    power   = []
+    power_a = []
+    power_b = []
+    stroke  = []
 
-    looking_for_e1 = True     # start here in hunt for first local minimum
-    looking_for_e2 = False    # then alternate between this state and the next
-    looking_for_e3 = False
+    LOOKING_FOR_E1 = True     # start here in hunt for first local minimum
+    LOOKING_FOR_E2 = False    # then alternate between this state and the next
+    LOOKING_FOR_E3 = False
 
-    min_index = 0             # position of the last minimum
+    ab_sel = 0
 
-    for i, v in enumerate(energy[:-1]): # loop over all i, i+1 pairs
+    for ii, tup in enumerate(energy[:-1]): # loop over all ii, ii+1 pairs
 
-        if looking_for_e1 and v < energy[i+1]:
-            local_min = (v, timestamp[i])
+        if LOOKING_FOR_E1 and tup[1] < energy[ii+1][1]:
+            local_min = tup
 
-            # pad all power entries up to the first local minimum with zero
-            for j in range(0, i - min_index):
-                power.append(0)
-                stroke.append(0)
+            power.append(tup)
+            stroke.append(tup)
 
-            min_index = i
+            LOOKING_FOR_E1 = False
+            LOOKING_FOR_E2 = True
 
-            looking_for_e1 = False
-            looking_for_e2 = True
+        elif LOOKING_FOR_E2 and tup[1] > energy[ii+1][1]:
+            local_max = tup
+            LOOKING_FOR_E2 = False
+            LOOKING_FOR_E3 = True
 
-        elif looking_for_e2 and v > energy[i+1]:
-            local_max = (v, timestamp[i])
-            looking_for_e2 = False
-            looking_for_e3 = True
-
-        elif looking_for_e3 and v < energy[i+1]:
-            e1, t1 = local_min
-            e2, t2 = local_max
-            e3, t3 = v, timestamp[i]
+        elif LOOKING_FOR_E3 and tup[1] < energy[ii+1][1]:
+            (t1, e1) = local_min
+            (t2, e2) = local_max
+            (t3, e3) = tup
 
             # we're at E3 in the data, so calculate the power for this stroke
-            # and update the values from the E1 position to here
-            pin = (e2-e1+(t2-t1)*(e2-e3)/(t3-t2))/(t3-t1) # eqs.(1,2)
+            pwr_over_stroke = (e2-e1+(t2-t1)*(e2-e3)/(t3-t2))/(t3-t1) # eqs.(1,2)
+            pwr_over_pull = (e2-e1+(t2-t1)*(e2-e3)/(t3-t2))/(t2-t1) # eqs.(1,2)
 
-            for j in range(0, i - min_index):
-                power.append(pin)
-                stroke.append(30.0/(t3-t1)) # double strokes/min = strokes/30s
+            power.append((t2, pwr_over_stroke))
+            stroke.append((t2, 30.0/(t3-t1))) # double strokes/min = strokes/30s
 
-            local_min = (e3, t3) # e3 is the next e1
-            min_index = i
-            looking_for_e2 = True
-            looking_for_e3 = False
+            if ab_sel==0:
+                power_a.append((t1, 0))
+                power_a.append((t2, pwr_over_pull))
+                power_a.append((t2, 0))
+                #power_a.append((t2, power_b[-1][-1]))
+                ab_sel = 1
+            else:
+                power_b.append((t1, 0))
+                power_b.append((t2, pwr_over_pull))
+                power_b.append((t2, 0))
+                #power_a.append((t2, power_a[-1][-1]))
+                ab_sel = 0
 
-    # replicate final entries in power to match the energy data set size
-    for i in range(0, len(energy) - len(power)):
-        power.append(pin)
-        stroke.append(0)
+            local_min = (t3, e3) # e3 is the next e1
+            LOOKING_FOR_E2 = True
+            LOOKING_FOR_E3 = False
 
-    KERNEL=40
-    fpower = []
-    fstroke = []
-    for i, p in enumerate(power):
-        psum = 0
-        ssum = 0
-        for j in range(0, KERNEL):
-            if i > j:
-                psum += power[i-j]
-                ssum += stroke[i-j]
-
-        fpower.append(psum/KERNEL)
-        fstroke.append(ssum/KERNEL)
-
-    return fpower, fstroke
-
-def forensic(filename):
-
-    # SI unit for moment of inertia is kg metres squared (not grammes)
-    mass   = 4.360  # mass of Lawler flywheel in kilogrammes
-    radius = 0.200  # radius of Lawler flywheel in metres
-
-    period = []     # not fully used - just the last thing pushed to it
-
-    timestamp = []
-    energy = []
-    rpm = []
-
-    with open(filename) as csvfile:
-        alldata = csv.reader(csvfile, delimiter=',')
-        for row in alldata:
-            if row[2] != 'None' and row[2] != '0':
-                h, m, s = row[0].split(':')
-                timestamp.append(int(h)*3600 + int(m)*60 + float(s))
-                # the millisecond rotation periods into seconds
-                period.append(int(row[2])*1.0e-6)
-                # current rotation period to frequency in rpm
-                rpm.append(60.0/period[-1])
-
-                # w  = 2*pi/period (angular velocity omega = 2 pi radians * revolutions/second)
-                # I  = 0.5*m*r^2 (half m radius squared)
-                # KE = 0.5*I*w^2 (half I omega squared)
-                energy.append(mass*(radius*math.pi/period[-1])**2)
-
-    fpower, fstroke = calculate_power(energy, timestamp)
-
-    return timestamp, energy, rpm, fpower, fstroke
-
-def report(filename):
-
-    timestamp, energy, rpm, fpower, fstroke = forensic(filename)
-
-    xlabel    = 'Time (seconds)'
-    xtitle    = 'Data source: {}'.format(filename)
-    rpm_label = 'Revolutions\n(per minute)'
-    eny_label = 'Rotational\nEnergy\n(joules)'
-    pwr_label = 'Power\n(watts)'
-    stk_label = 'Double Strokes\n(per minute)'
-
-    fig, (rpm_axes, eny_axes, pwr_axes, stk_axes) = plt.subplots(4, sharex=True)
-
-    rpm_dots, = rpm_axes.plot(timestamp, rpm, 'g', marker='.', label='samples')
-    rpm_axes.grid(b=True)
-    rpm_axes.set_ylabel(rpm_label)
-
-    eny_line, = eny_axes.plot(timestamp, energy, 'b', label='line')
-    eny_axes.grid(b=True)
-    eny_axes.set_ylabel(eny_label)
-
-    pwr_axes.plot(timestamp, fpower, color='orange')
-    pwr_axes.grid(b=True)
-    pwr_axes.set_ylabel(pwr_label)
-
-    stk_axes.plot(timestamp, fstroke, color='gray')
-    stk_axes.grid(b=True)
-    stk_axes.set_ylabel(stk_label)
-
-    rpm_axes.set_title(xtitle)
-    stk_axes.set_xlabel(xlabel)
-
-    plt.tight_layout()
-
-    fig.savefig(re.compile('csv').sub('png', filename))
-    #plt.show()
-    plt.close(fig)
+    return energy, rpm, power, stroke, power_a, power_b
