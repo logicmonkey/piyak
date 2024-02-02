@@ -69,7 +69,6 @@ from collections import deque
 
 from generate_track import generate_track
 from tcx import tcx_preamble, tcx_trackpoint, tcx_postamble
-from report import report
 
 class Piyak(BoxLayout):
 
