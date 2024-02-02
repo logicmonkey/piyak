@@ -149,7 +149,7 @@ class Piyak(BoxLayout):
             self.ids.i_elapsed.text = "{:02d}:{:02d}:{:02d}".format(hour, mins, secs)
 
             # synthetic activity oscillates between 71ms and 79ms to simulate non-linear input
-            self.pin_delta.append((75000.0 + 4000.0*math.sin(self.pin_eventcount/5.0), time_now))
+            self.pin_delta.append((75000.0 + 4000.0*math.sin(self.pin_eventcount/2.4), time_now))
             self.pin_eventcount += 1000000.0/(60.0*self.pin_delta[NEW][0])
 
             if self.pin_delta[NEW][0] != None and self.pin_eventcount != 0:
