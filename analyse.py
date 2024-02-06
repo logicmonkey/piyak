@@ -68,39 +68,52 @@ if __name__ == '__main__' :
     xlabel = 'Time (seconds)'
     xtitle = 'Session: {}'.format(session)
 
-    fig, (rpm_axes, eny_axes, pwr_axes, stk_axes) = plt.subplots(4, sharex=True)
+    fig, (rpm_axes, pwr_axes) = plt.subplots(2, sharex=True)
 
-    rpm_axes.set_ylabel('Revolutions\n(per minute)')
-    eny_axes.set_ylabel('Rotational\nEnergy\n(joules)')
-    pwr_axes.set_ylabel('Power\n(watts)')
-    stk_axes.set_ylabel('Double Strokes\n(per minute)')
-
+    # flywheel
+    color = 'tab:green'
+    rpm_axes.grid(visible=True)
+    rpm_axes.set_ylabel('Revolutions\n(per minute)', color=color)
+    rpm_axes.tick_params(axis='y', labelcolor=color)
     x, y = zip(*rpm)
-    rpm_axes.plot(x, y, color='green')
+    rpm_axes.plot(x, y, color=color)
     rpm_scat = rpm_axes.scatter(x, y, color='green', marker='.')
 
+    eny_axes = rpm_axes.twinx()
+
+    color = 'tab:blue'
+    eny_axes.set_ylabel('Rotational\nEnergy\n(joules)', color=color)
+    eny_axes.tick_params(axis='y', labelcolor=color)
     x, y = zip(*energy)
-    eny_axes.plot(x, y, color='blue')
-    eny_scat = eny_axes.scatter(x, y, color='blue', marker='.')
+    eny_axes.plot(x, y, color=color)
+    eny_scat = eny_axes.scatter(x, y, color=color, marker='.')
 
-    x, y = zip(*power)
-    pwr_axes.plot(x, y, color='orange')
-
-    x, y = zip(*power_a)
-    pwr_axes.plot(x, y, color='red')
-    pwra_scat = pwr_axes.scatter(x, y, color='red', marker='.')
-
-    x, y = zip(*power_b)
-    pwr_axes.plot(x, y, color='green')
-    pwrb_scat = pwr_axes.scatter(x, y, color='green', marker='.')
-
-    x, y = zip(*stroke)
-    stk_axes.plot(x, y, color='gray')
-
-    rpm_axes.grid(visible=True)
-    eny_axes.grid(visible=True)
+    # power
+    color = 'tab:orange'
     pwr_axes.grid(visible=True)
+    pwr_axes.set_ylabel('Power\n(watts)', color=color)
+    pwr_axes.tick_params(axis='y', labelcolor=color)
+    x, y = zip(*power)
+    pwr_axes.plot(x, y, color=color)
+
+    color = 'tab:red'
+    x, y = zip(*power_a)
+    pwr_axes.plot(x, y, color=color)
+    pwra_scat = pwr_axes.scatter(x, y, color=color, marker='.')
+
+    color = 'tab:green'
+    x, y = zip(*power_b)
+    pwr_axes.plot(x, y, color=color)
+    pwrb_scat = pwr_axes.scatter(x, y, color=color, marker='.')
+
+    stk_axes = pwr_axes.twinx()
+
+    color = 'tab:purple'
     stk_axes.grid(visible=True)
+    stk_axes.set_ylabel('Double Strokes\n(per minute)', color=color)
+    stk_axes.tick_params(axis='y', labelcolor=color)
+    x, y = zip(*stroke)
+    stk_axes.plot(x, y, color=color)
 
     rpm_axes.set_title(xtitle)
     stk_axes.set_xlabel(xlabel)
@@ -131,7 +144,7 @@ if __name__ == '__main__' :
     def hover(event):
         rpm_vis = rpm_anno.get_visible()
         eny_vis = eny_anno.get_visible()
-        pwr_vis = eny_anno.get_visible()
+        pwr_vis = pwr_anno.get_visible()
 
         if event.inaxes == rpm_axes:
             valid, index = rpm_scat.contains(event) # mouse event on scatter obj?
