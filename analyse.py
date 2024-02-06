@@ -68,9 +68,10 @@ if __name__ == '__main__' :
     xlabel = 'Time (seconds)'
     xtitle = 'Session: {}'.format(session)
 
-    fig, (rpm_axes, pwr_axes) = plt.subplots(2, sharex=True)
+#    fig, (rpm_axes, pwr_axes) = plt.subplots(2, sharex=True)
+    fig, (rpm_axes, eny_axes, pwr_axes, stk_axes) = plt.subplots(4, sharex=True)
 
-    # flywheel
+    # Flywheel
     color = 'tab:green'
     rpm_axes.grid(visible=True)
     rpm_axes.set_ylabel('Revolutions\n(per minute)', color=color)
@@ -79,16 +80,17 @@ if __name__ == '__main__' :
     rpm_axes.plot(x, y, color=color)
     rpm_scat = rpm_axes.scatter(x, y, color='green', marker='.')
 
-    eny_axes = rpm_axes.twinx()
+#    eny_axes = rpm_axes.twinx()
 
     color = 'tab:blue'
+    eny_axes.grid(visible=True)
     eny_axes.set_ylabel('Rotational\nEnergy\n(joules)', color=color)
     eny_axes.tick_params(axis='y', labelcolor=color)
     x, y = zip(*energy)
     eny_axes.plot(x, y, color=color)
     eny_scat = eny_axes.scatter(x, y, color=color, marker='.')
 
-    # power
+    # Power
     color = 'tab:orange'
     pwr_axes.grid(visible=True)
     pwr_axes.set_ylabel('Power\n(watts)', color=color)
@@ -106,8 +108,9 @@ if __name__ == '__main__' :
     pwr_axes.plot(x, y, color=color)
     pwrb_scat = pwr_axes.scatter(x, y, color=color, marker='.')
 
-    stk_axes = pwr_axes.twinx()
+#    stk_axes = pwr_axes.twinx()
 
+    # Stroke rate
     color = 'tab:purple'
     stk_axes.grid(visible=True)
     stk_axes.set_ylabel('Double Strokes\n(per minute)', color=color)
@@ -121,17 +124,17 @@ if __name__ == '__main__' :
     # ANNOTATION START - comment out between START and END for simple plot
     # create object for speed xy scatter because this can be queried and annotated
 
-    rpm_anno = rpm_axes.annotate("", # set the annotation text based on value
+    rpm_anno = rpm_axes.annotate("",
                    xy=(0,0), xytext=(20,20),
                    textcoords="offset points",
                    bbox=dict(boxstyle="round", fc="w"),
                    arrowprops=dict(arrowstyle="->"))
-    eny_anno = eny_axes.annotate("", # set the annotation text based on value
+    eny_anno = eny_axes.annotate("",
                    xy=(0,0), xytext=(20,20),
                    textcoords="offset points",
                    bbox=dict(boxstyle="round", fc="w"),
                    arrowprops=dict(arrowstyle="->"))
-    pwr_anno = pwr_axes.annotate("", # set the annotation text based on value
+    pwr_anno = pwr_axes.annotate("",
                    xy=(0,0), xytext=(20,20),
                    textcoords="offset points",
                    bbox=dict(boxstyle="round", fc="w"),
@@ -142,9 +145,6 @@ if __name__ == '__main__' :
     pwr_anno.set_visible(False)
 
     def hover(event):
-        rpm_vis = rpm_anno.get_visible()
-        eny_vis = eny_anno.get_visible()
-        pwr_vis = pwr_anno.get_visible()
 
         if event.inaxes == rpm_axes:
             valid, index = rpm_scat.contains(event) # mouse event on scatter obj?
@@ -155,38 +155,31 @@ if __name__ == '__main__' :
                 minutes, seconds = divmod(int(pos[0]), 60)
                 rpm_anno.set_text("Time {:02d}:{:02d}\nTacho {:.0f}rpm".format(minutes, seconds, pos[1]))
                 fig.canvas.draw_idle()
-            elif rpm_vis:
-                fig.canvas.draw_idle()
 
         if event.inaxes == eny_axes:
-            valid, index = eny_scat.contains(event) # mouse event on scatter obj?
+            valid, index = eny_scat.contains(event)
             eny_anno.set_visible(valid)
             if valid:
                 pos = eny_scat.get_offsets()[index["ind"][0]]
                 eny_anno.xy = pos
                 eny_anno.set_text("Time {:.2f}s\nEnergy {:.0f}J".format(pos[0], pos[1]))
                 fig.canvas.draw_idle()
-            elif eny_vis:
-                fig.canvas.draw_idle()
 
         if event.inaxes == pwr_axes:
-            a_valid, a_index = pwra_scat.contains(event) # mouse event on scatter obj?
-            b_valid, b_index = pwrb_scat.contains(event) # mouse event on scatter obj?
+            a_valid, a_index = pwra_scat.contains(event)
+            b_valid, b_index = pwrb_scat.contains(event)
+            pwr_anno.set_visible(a_valid or b_valid)
             if a_valid:
-                pwr_anno.set_visible(a_valid)
                 pos = pwra_scat.get_offsets()[a_index["ind"][0]]
                 pwr_anno.xy = pos
                 minutes, seconds = divmod(int(pos[0]), 60)
                 pwr_anno.set_text("Time {:02d}:{:02d}\nPower {:.0f}W".format(minutes, seconds, pos[1]))
                 fig.canvas.draw_idle()
             elif b_valid:
-                pwr_anno.set_visible(b_valid)
                 pos = pwrb_scat.get_offsets()[b_index["ind"][0]]
                 pwr_anno.xy = pos
                 minutes, seconds = divmod(int(pos[0]), 60)
                 pwr_anno.set_text("Time {:02d}:{:02d}\nPower {:.0f}W".format(minutes, seconds, pos[1]))
-                fig.canvas.draw_idle()
-            elif pwr_vis:
                 fig.canvas.draw_idle()
 
     fig.canvas.mpl_connect("motion_notify_event", hover)
