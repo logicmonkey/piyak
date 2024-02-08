@@ -68,7 +68,6 @@ if __name__ == '__main__' :
     xlabel = 'Time (seconds)'
     xtitle = 'Session: {}'.format(session)
 
-#    fig, (rpm_axes, pwr_axes) = plt.subplots(2, sharex=True)
     fig, (rpm_axes, eny_axes, pwr_axes, stk_axes) = plt.subplots(4, sharex=True)
 
     # Flywheel
@@ -79,8 +78,6 @@ if __name__ == '__main__' :
     x, y = zip(*rpm)
     rpm_axes.plot(x, y, color=color)
     rpm_scat = rpm_axes.scatter(x, y, color='green', marker='.')
-
-#    eny_axes = rpm_axes.twinx()
 
     color = 'tab:blue'
     eny_axes.grid(visible=True)
@@ -107,8 +104,6 @@ if __name__ == '__main__' :
     x, y = zip(*power_b)
     pwr_axes.plot(x, y, color=color)
     pwrb_scat = pwr_axes.scatter(x, y, color=color, marker='.')
-
-#    stk_axes = pwr_axes.twinx()
 
     # Stroke rate
     color = 'tab:purple'
