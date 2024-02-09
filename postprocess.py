@@ -181,7 +181,7 @@ def scan_data(session):
     for ii, tup in enumerate(energy[:-1]): # loop over all ii, ii+1 pairs
 
         if LOOKING_FOR_E1 and tup[1] < energy[ii+1][1]:
-            local_min = tup
+            leading_edge = [tup]
 
             power.append(tup)
             stroke.append(tup)
@@ -189,19 +189,23 @@ def scan_data(session):
             LOOKING_FOR_E1 = False
             LOOKING_FOR_E2 = True
 
-        elif LOOKING_FOR_E2 and tup[1] > energy[ii+1][1]:
-            local_max = tup
-            LOOKING_FOR_E2 = False
-            LOOKING_FOR_E3 = True
+        elif LOOKING_FOR_E2:
+            leading_edge.append(tup)
+
+            if tup[1] > energy[ii+1][1]:
+                LOOKING_FOR_E2 = False
+                LOOKING_FOR_E3 = True
 
         elif LOOKING_FOR_E3 and tup[1] < energy[ii+1][1]:
-            (t1, e1) = local_min
-            (t2, e2) = local_max
+            (t1, e1) = leading_edge[0]
+            (t2, e2) = leading_edge[len(leading_edge)-1]
             (t3, e3) = tup
 
             # we're at E3 in the data, so calculate the power for this stroke
-            pwr_over_stroke = (e2-e1+(t2-t1)*(e2-e3)/(t3-t2))/(t3-t1) # eqs.(1,2)
-            pwr_over_pull = (e2-e1+(t2-t1)*(e2-e3)/(t3-t2))/(t2-t1) # eqs.(1,2)
+            air_resistance = (e2-e3)*(t2-t1)/(t3-t2)
+
+            pwr_over_stroke = (e2-e1 + air_resistance) / (t3-t1) # eqs.(1,2)
+            pwr_over_pull = (e2-e1 + air_resistance) / (t2-t1) # eqs.(1,2)
 
             power.append((t2, pwr_over_stroke))
             stroke.append((t2, 30.0/(t3-t1))) # double strokes/min = strokes/30s
@@ -219,7 +223,7 @@ def scan_data(session):
                 #power_a.append((t2, power_a[-1][-1]))
                 ab_sel = 0
 
-            local_min = (t3, e3) # e3 is the next e1
+            leading_edge = [tup] # e3 is the next e1
             LOOKING_FOR_E2 = True
             LOOKING_FOR_E3 = False
 
