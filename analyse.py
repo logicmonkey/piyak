@@ -157,7 +157,7 @@ if __name__ == '__main__' :
             if valid:
                 pos = eny_scat.get_offsets()[index["ind"][0]]
                 eny_anno.xy = pos
-                eny_anno.set_text("Time {:.2f}s\nEnergy {:.0f}J".format(pos[0], pos[1]))
+                eny_anno.set_text("Time {:.3f}s\nEnergy {:.0f}J".format(pos[0], pos[1]))
                 fig.canvas.draw_idle()
 
         if event.inaxes == pwr_axes:
@@ -167,14 +167,12 @@ if __name__ == '__main__' :
             if a_valid:
                 pos = pwra_scat.get_offsets()[a_index["ind"][0]]
                 pwr_anno.xy = pos
-                minutes, seconds = divmod(int(pos[0]), 60)
-                pwr_anno.set_text("Time {:02d}:{:02d}\nPower {:.0f}W".format(minutes, seconds, pos[1]))
+                pwr_anno.set_text("Time {:.3f}s\nPower {:.0f}W".format(pos[0], pos[1]))
                 fig.canvas.draw_idle()
             elif b_valid:
                 pos = pwrb_scat.get_offsets()[b_index["ind"][0]]
                 pwr_anno.xy = pos
-                minutes, seconds = divmod(int(pos[0]), 60)
-                pwr_anno.set_text("Time {:02d}:{:02d}\nPower {:.0f}W".format(minutes, seconds, pos[1]))
+                pwr_anno.set_text("Time {:.3f}s\nPower {:.0f}W".format(pos[0], pos[1]))
                 fig.canvas.draw_idle()
 
     fig.canvas.mpl_connect("motion_notify_event", hover)
