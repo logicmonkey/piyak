@@ -202,25 +202,31 @@ def scan_data(session):
             (t3, e3) = tup
 
             # we're at E3 in the data, so calculate the power for this stroke
-            air_resistance = (e2-e3)*(t2-t1)/(t3-t2)
+            air_resistance = (e2-e3)/(t3-t2)
 
-            pwr_over_stroke = (e2-e1 + air_resistance) / (t3-t1) # eqs.(1,2)
-            pwr_over_pull = (e2-e1 + air_resistance) / (t2-t1) # eqs.(1,2)
+            pwr_over_stroke = (e2-e1 + air_resistance*(t2-t1)) / (t3-t1) # eqs.(1,2)
+            pwr_over_pull = (e2-e1 + air_resistance*(t2-t1)) / (t2-t1) # eqs.(1,2)
 
             power.append((t2, pwr_over_stroke))
             stroke.append((t2, 30.0/(t3-t1))) # double strokes/min = strokes/30s
 
             if ab_sel==0:
                 power_a.append((t1, 0))
-                power_a.append((t2, pwr_over_pull))
+                for jj, le_sample in enumerate(leading_edge[:-1]):
+                    curr_ts, curr_en = leading_edge[jj+1]
+                    inst_pwr = ((curr_en - e1) + air_resistance*(curr_ts - t1))/(t2 - t1)
+                    power_a.append((curr_ts, inst_pwr))
+                #power_a.append((t2, pwr_over_pull))
                 power_a.append((t2, 0))
-                #power_a.append((t2, power_b[-1][-1]))
                 ab_sel = 1
             else:
                 power_b.append((t1, 0))
-                power_b.append((t2, pwr_over_pull))
+                for jj, le_sample in enumerate(leading_edge[:-1]):
+                    curr_ts, curr_en = leading_edge[jj+1]
+                    inst_pwr = ((curr_en - e1) + air_resistance*(curr_ts - t1))/(t2 - t1)
+                    power_b.append((curr_ts, inst_pwr))
+                #power_b.append((t2, pwr_over_pull))
                 power_b.append((t2, 0))
-                #power_a.append((t2, power_a[-1][-1]))
                 ab_sel = 0
 
             leading_edge = [tup] # e3 is the next e1
