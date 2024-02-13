@@ -37,6 +37,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+#:set HUGE 70
+#:set UNIT_Y 70
+#:set SCALE_X 0.75
+
 <Piyak>:
     BoxLayout:
         orientation: 'vertical'
@@ -45,8 +49,8 @@
                 Rectangle:
                     source: 'images/lm_tacho_dial.png'
                     # centre the dial with a shift right
-                    pos: [self.center[0]-self.height/2.0, self.y]
-                    size: [self.height, self.height] # circular, not an ellipse
+                    pos: [self.center[0]-self.height*SCALE_X/2.0, self.y]
+                    size: [self.height*SCALE_X, self.height] # circular, not an ellipse
                 PushMatrix
                 Rotate:
                     angle: root.needle
@@ -54,33 +58,33 @@
                 Rectangle:
                     source: 'images/lm_tacho_needle.png'
                     # centre the dial with a shift right
-                    pos: [self.center[0]-self.height/2.0, self.y]
-                    size: [self.height, self.height] # circular, not an ellipse
+                    pos: [self.center[0]-self.height*SCALE_X/2.0, self.y]
+                    size: [self.height*SCALE_X, self.height] # circular, not an ellipse
                 PopMatrix
         Label:
             id: i_power
             text: "[b]0.0[/b]W"
-            font_size: 90
+            font_size: HUGE
             markup: True
             color: [1, 0, 0, 1]
             size_hint_y: None
-            height: 110
+            height: UNIT_Y
         Label:
             id: i_speed
             text: "[b]0.0[/b]km/h"
-            font_size: 90
+            font_size: HUGE
             markup: True
-            color: [0, 0, 1, 1]
+            color: [0.3, 0.3, 1, 1]
             size_hint_y: None
-            height: 110
+            height: UNIT_Y
         Label:
             id: i_dist
             text: "[b]0[/b]m"
-            font_size: 90
+            font_size: HUGE
             markup: True
             color: [0, 1, 0, 1]
             size_hint_y: None
-            height: 110
+            height: UNIT_Y
 
     BoxLayout:
         orientation: 'vertical'
@@ -109,21 +113,21 @@
         Label:
             id: i_stroke
             text: "0dspm"
-            font_size: 90
+            font_size: HUGE
             markup: True
             color: [0.8, 0.8, 0.0, 1]
             size_hint_y: None
-            height: 110
+            height: UNIT_Y
         Label:
             id: i_elapsed
             text: "00:00:00"
-            font_size: 90
+            font_size: HUGE
             color: [0.8, 0.8, 0.8, 1]
             size_hint_y: None
-            height: 110
+            height: UNIT_Y
         BoxLayout:
             size_hint_y: None
-            height: 110
+            height: UNIT_Y
             Button:
                 id: i_reset
                 text: '[b]RESET[/b]'

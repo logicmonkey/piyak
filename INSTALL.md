@@ -34,6 +34,13 @@ Open a command line terminal and enter the commands:
 sudo apt-get install python3-sdl2
 python3 -m pip install matplotlib
 python3 -m pip install kivy==1.11.1
+
+UPDATE - this should be all that is required on a clean Raspberry Pi OS (bookworm) system
+sudo apt install python3-kivy python3-matplotlib libmtdev1 git
+git clone https://github.com/logicmonkey/piyak.git
+cd piyak
+sudo pigpiod
+./pyak.py
 ```
 # Now download the piyak software.
 * Open the web browser and go to https://github.com/logicmonkey/piyak
