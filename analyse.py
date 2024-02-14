@@ -81,33 +81,31 @@ if __name__ == '__main__' :
     #rpm_axes.plot(x, y, color=color)
     #rpm_scat = rpm_axes.scatter(x, y, color=color, marker='.')
 
-    pwr_color = 'tab:orange'
-    eny_color = 'tab:blue'
+    pwr_color  = 'tab:orange'
+    eny_color  = 'tab:blue'
     pwra_color = 'tab:red'
     pwrb_color = 'tab:green'
-    stk_color = 'tab:purple'
-    color = 'black'
+    stk_color  = 'tab:purple'
+    color      = 'black'
 
     # Power
     pwr_axes.grid(visible=True)
 
     pwr_axes.set_ylabel('Energy (joules)\nPower (watts)\nStroke Rate (dspm)', color=color)
-    pwr_x, pwr_y = zip(*power)
-    pwr_axes.plot(pwr_x, pwr_y, color=pwr_color)
 
-    eny_x, eny_y = zip(*energy)
-    pwr_axes.plot(eny_x, eny_y, color=eny_color)
-
+    pwr_x, pwr_y   = zip(*power)
+    eny_x, eny_y   = zip(*energy)
     pwra_x, pwra_y = zip(*power_a)
-    pwr_axes.plot(pwra_x, pwra_y, color=pwra_color)
-
     pwrb_x, pwrb_y = zip(*power_b)
+    stk_x, stk_y   = zip(*stroke)
+
+    pwr_axes.plot(eny_x,  eny_y,  color=eny_color)
+    pwr_axes.plot(pwra_x, pwra_y, color=pwra_color)
     pwr_axes.plot(pwrb_x, pwrb_y, color=pwrb_color)
+    pwr_axes.plot(pwr_x,  pwr_y,  color=pwr_color)
+    pwr_axes.plot(stk_x,  stk_y,  color=stk_color)
 
-    stk_x, stk_y = zip(*stroke)
-    pwr_axes.plot(stk_x, stk_y, color=stk_color)
-
-    #eny_scat = pwr_axes.scatter(eny_x, eny_y, color=eny_color, marker='.')
+    #eny_scat  = pwr_axes.scatter(eny_x,  eny_y,  color=eny_color,  marker='.')
     #pwra_scat = pwr_axes.scatter(pwra_x, pwra_y, color=pwra_color, marker='.')
     #pwrb_scat = pwr_axes.scatter(pwrb_x, pwrb_y, color=pwrb_color, marker='.')
 
@@ -117,6 +115,10 @@ if __name__ == '__main__' :
     zoom_eny,  = zoom.plot([], [])
     zoom_pwra, = zoom.plot([], [])
     zoom_pwrb, = zoom.plot([], [])
+
+    eny_scat  = zoom.scatter([], [], color=eny_color,  marker='.')
+    pwra_scat = zoom.scatter([], [], color=pwra_color, marker='.')
+    pwrb_scat = zoom.scatter([], [], color=pwrb_color, marker='.')
 
     def onselect(xmin, xmax):
 
@@ -143,9 +145,13 @@ if __name__ == '__main__' :
             zoom_pwra.set_data(pwra_region_x, pwra_region_y)
             zoom_pwrb.set_data(pwrb_region_x, pwrb_region_y)
 
-            eny_scat  = zoom.scatter(eny_region_x, eny_region_y, color=eny_color, marker='.')
-            pwra_scat = zoom.scatter(pwra_region_x, pwra_region_y, color=pwra_color, marker='.')
-            pwrb_scat = zoom.scatter(pwrb_region_x, pwrb_region_y, color=pwrb_color, marker='.')
+            eny_temp  = zoom.scatter(eny_region_x,  eny_region_y,  color=eny_color,  marker='.')
+            pwra_temp = zoom.scatter(pwra_region_x, pwra_region_y, color=pwra_color, marker='.')
+            pwrb_temp = zoom.scatter(pwrb_region_x, pwrb_region_y, color=pwrb_color, marker='.')
+
+            eny_scat.set_offsets(eny_temp.get_offsets())
+            pwra_scat.set_offsets(pwra_temp.get_offsets())
+            pwrb_scat.set_offsets(pwrb_temp.get_offsets())
 
             zoom.set_xlim(eny_region_x[0], eny_region_x[-1])
             #zoom.set_ylim(region_y.min(), region_y.max())
@@ -160,15 +166,14 @@ if __name__ == '__main__' :
         props=dict(alpha=0.5, facecolor="tab:blue"),
         interactive=True,
         drag_from_anywhere=True)
-    # ANNOTATION START - comment out between START and END for simple plot
-    # create object for speed xy scatter because this can be queried and annotated
+
 
     #rpm_anno = rpm_axes.annotate("",
     #               xy=(0,0), xytext=(20,20),
     #               textcoords="offset points",
     #               bbox=dict(boxstyle="round", fc="w"),
     #               arrowprops=dict(arrowstyle="->"))
-    pwr_anno = pwr_axes.annotate("",
+    pwr_anno = zoom.annotate("",
                    xy=(0,0), xytext=(20,20),
                    textcoords="offset points",
                    bbox=dict(boxstyle="round", fc="w"),
@@ -212,9 +217,6 @@ if __name__ == '__main__' :
                 fig.canvas.draw_idle()
 
     fig.canvas.mpl_connect("motion_notify_event", hover)
-
-    # ANNOTATION END
-
 
     plt.tight_layout()
     plt.show()
