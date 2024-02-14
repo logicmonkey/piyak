@@ -65,6 +65,11 @@ if __name__ == '__main__' :
 
     session = sys.argv[1]
 
+    SHOW_RPM = False
+
+    if len(sys.argv) == 3 and sys.argv[2] == '-rpm':
+        SHOW_RPM = True
+
     energy, rpm, power, stroke, power_a, power_b = scan_data(session)
 
     rpm_color  = 'tab:green'
@@ -75,18 +80,13 @@ if __name__ == '__main__' :
     stk_color  = 'tab:purple'
     color      = 'black'
 
-    #fig, (rpm_ax, world_ax, zoom_ax) = plt.subplots(3, sharex=True)
-    fig, (world_ax, zoom_ax) = plt.subplots(2)
+    if SHOW_RPM:
+        fig, (world_ax, zoom_ax, rpm_ax) = plt.subplots(3)
+    else:
+        fig, (world_ax, zoom_ax) = plt.subplots(2)
 
     world_ax.set_title('Session: {}'.format(session))
     zoom_ax.set_xlabel('Time (seconds)')
-
-    # Flywheel
-    #rpm_ax.grid(visible=True)
-    #rpm_ax.set_ylabel('Flywheel\n(rpm)', color=rpm_color)
-    #rpm_x, rpm_y = zip(*rpm)
-    #rpm_ax.plot(rpm_x, rpm_y, color=rpm_color)
-    #rpm_scat = rpm_ax.scatter(rpm_x, rpm_y, color=rpm_color, marker='.')
 
     # Power
     world_ax.grid(visible=True)
@@ -114,13 +114,6 @@ if __name__ == '__main__' :
     pwra_scat = zoom_ax.scatter([], [], color=pwra_color, marker='.')
     pwrb_scat = zoom_ax.scatter([], [], color=pwrb_color, marker='.')
 
-    #rpm_anno = rpm_axes.annotate("",
-    #               xy=(0,0), xytext=(20,20),
-    #               textcoords="offset points",
-    #               bbox=dict(boxstyle="round", fc="w"),
-    #               arrowprops=dict(arrowstyle="->"))
-    #rpm_anno.set_visible(False)
-
     anno = zoom_ax.annotate("",
                 xy=(0,0), xytext=(20,20),
                 textcoords="offset points",
@@ -130,16 +123,6 @@ if __name__ == '__main__' :
     anno.set_visible(False)
 
     def hover(event):
-
-    #    if event.inaxes == rpm_axes:
-    #        r_valid, r_index = rpm_scat.contains(event)
-    #        rpm_anno.set_visible(r_valid)
-    #        if r_valid:
-    #            pos = rpm_scat.get_offsets()[r_index["ind"][0]]
-    #            rpm_anno.xy = pos
-    #            minutes, seconds = divmod(int(pos[0]), 60)
-    #            rpm_anno.set_text("Time {:02d}:{:02d}\nTacho {:.0f}rpm".format(minutes, seconds, pos[1]))
-    #            fig.canvas.draw_idle()
 
         if event.inaxes == zoom_ax:
             a_valid, a_index = pwra_scat.contains(event)
@@ -207,6 +190,14 @@ if __name__ == '__main__' :
         props=dict(alpha=0.5, facecolor="tab:blue"),
         interactive=True,
         drag_from_anywhere=True)
+
+    if SHOW_RPM:
+        # Flywheel
+        rpm_ax.grid(visible=True)
+        rpm_ax.set_ylabel('Flywheel\n(rpm)', color=rpm_color)
+        rpm_x, rpm_y = zip(*rpm)
+        rpm_ax.plot(rpm_x, rpm_y, color=rpm_color)
+        rpm_scat = rpm_ax.scatter(rpm_x, rpm_y, color=rpm_color, marker='.')
 
     fig.canvas.mpl_connect("motion_notify_event", hover)
 
