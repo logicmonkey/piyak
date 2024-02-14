@@ -68,32 +68,30 @@ if __name__ == '__main__' :
     xlabel = 'Time (seconds)'
     xtitle = 'Session: {}'.format(session)
 
-    fig, (rpm_axes, eny_axes, pwr_axes, stk_axes) = plt.subplots(4, sharex=True)
+    #fig, (rpm_axes, pwr_axes) = plt.subplots(2, sharex=True)
+    fig, pwr_axes = plt.subplots()
 
     # Flywheel
-    color = 'tab:green'
-    rpm_axes.grid(visible=True)
-    rpm_axes.set_ylabel('Revolutions\n(per minute)', color=color)
-    rpm_axes.tick_params(axis='y', labelcolor=color)
-    x, y = zip(*rpm)
-    rpm_axes.plot(x, y, color=color)
-    rpm_scat = rpm_axes.scatter(x, y, color='green', marker='.')
-
-    color = 'tab:blue'
-    eny_axes.grid(visible=True)
-    eny_axes.set_ylabel('Rotational\nEnergy\n(joules)', color=color)
-    eny_axes.tick_params(axis='y', labelcolor=color)
-    x, y = zip(*energy)
-    eny_axes.plot(x, y, color=color)
-    eny_scat = eny_axes.scatter(x, y, color=color, marker='.')
+    #color = 'tab:green'
+    #rpm_axes.grid(visible=True)
+    #rpm_axes.set_ylabel('Flywheel\n(rpm)', color=color)
+    #x, y = zip(*rpm)
+    #rpm_axes.plot(x, y, color=color)
+    #rpm_scat = rpm_axes.scatter(x, y, color=color, marker='.')
 
     # Power
-    color = 'tab:orange'
     pwr_axes.grid(visible=True)
-    pwr_axes.set_ylabel('Power\n(watts)', color=color)
-    pwr_axes.tick_params(axis='y', labelcolor=color)
+
+    color = 'black'
+    pwr_axes.set_ylabel('Energy (joules)\nPower (watts)\nStroke Rate (dspm)', color=color)
+    color = 'tab:orange'
     x, y = zip(*power)
     pwr_axes.plot(x, y, color=color)
+
+    color = 'tab:blue'
+    x, y = zip(*energy)
+    pwr_axes.plot(x, y, color=color)
+    eny_scat = pwr_axes.scatter(x, y, color=color, marker='.')
 
     color = 'tab:red'
     x, y = zip(*power_a)
@@ -107,63 +105,46 @@ if __name__ == '__main__' :
 
     # Stroke rate
     color = 'tab:purple'
-    stk_axes.grid(visible=True)
-    stk_axes.set_ylabel('Double Strokes\n(per minute)', color=color)
-    stk_axes.tick_params(axis='y', labelcolor=color)
     x, y = zip(*stroke)
-    stk_axes.plot(x, y, color=color)
+    pwr_axes.plot(x, y, color=color)
 
-    rpm_axes.set_title(xtitle)
-    stk_axes.set_xlabel(xlabel)
+    #rpm_axes.set_title(xtitle)
+    pwr_axes.set_xlabel(xlabel)
 
     # ANNOTATION START - comment out between START and END for simple plot
     # create object for speed xy scatter because this can be queried and annotated
 
-    rpm_anno = rpm_axes.annotate("",
-                   xy=(0,0), xytext=(20,20),
-                   textcoords="offset points",
-                   bbox=dict(boxstyle="round", fc="w"),
-                   arrowprops=dict(arrowstyle="->"))
-    eny_anno = eny_axes.annotate("",
-                   xy=(0,0), xytext=(20,20),
-                   textcoords="offset points",
-                   bbox=dict(boxstyle="round", fc="w"),
-                   arrowprops=dict(arrowstyle="->"))
+    #rpm_anno = rpm_axes.annotate("",
+    #               xy=(0,0), xytext=(20,20),
+    #               textcoords="offset points",
+    #               bbox=dict(boxstyle="round", fc="w"),
+    #               arrowprops=dict(arrowstyle="->"))
     pwr_anno = pwr_axes.annotate("",
                    xy=(0,0), xytext=(20,20),
                    textcoords="offset points",
                    bbox=dict(boxstyle="round", fc="w"),
                    arrowprops=dict(arrowstyle="->"))
 
-    rpm_anno.set_visible(False)
-    eny_anno.set_visible(False)
+    #rpm_anno.set_visible(False)
     pwr_anno.set_visible(False)
 
     def hover(event):
 
-        if event.inaxes == rpm_axes:
-            valid, index = rpm_scat.contains(event) # mouse event on scatter obj?
-            rpm_anno.set_visible(valid)
-            if valid:
-                pos = rpm_scat.get_offsets()[index["ind"][0]]
-                rpm_anno.xy = pos
-                minutes, seconds = divmod(int(pos[0]), 60)
-                rpm_anno.set_text("Time {:02d}:{:02d}\nTacho {:.0f}rpm".format(minutes, seconds, pos[1]))
-                fig.canvas.draw_idle()
-
-        if event.inaxes == eny_axes:
-            valid, index = eny_scat.contains(event)
-            eny_anno.set_visible(valid)
-            if valid:
-                pos = eny_scat.get_offsets()[index["ind"][0]]
-                eny_anno.xy = pos
-                eny_anno.set_text("Time {:.3f}s\nEnergy {:.0f}J".format(pos[0], pos[1]))
-                fig.canvas.draw_idle()
+    #    if event.inaxes == rpm_axes:
+    #        r_valid, r_index = rpm_scat.contains(event)
+    #        rpm_anno.set_visible(r_valid)
+    #        if r_valid:
+    #            pos = rpm_scat.get_offsets()[r_index["ind"][0]]
+    #            rpm_anno.xy = pos
+    #            minutes, seconds = divmod(int(pos[0]), 60)
+    #            rpm_anno.set_text("Time {:02d}:{:02d}\nTacho {:.0f}rpm".format(minutes, seconds, pos[1]))
+    #            fig.canvas.draw_idle()
 
         if event.inaxes == pwr_axes:
             a_valid, a_index = pwra_scat.contains(event)
             b_valid, b_index = pwrb_scat.contains(event)
-            pwr_anno.set_visible(a_valid or b_valid)
+            e_valid, e_index = eny_scat.contains(event)
+            pwr_anno.set_visible(a_valid or b_valid or e_valid)
             if a_valid:
                 pos = pwra_scat.get_offsets()[a_index["ind"][0]]
                 pwr_anno.xy = pos
@@ -173,6 +154,11 @@ if __name__ == '__main__' :
                 pos = pwrb_scat.get_offsets()[b_index["ind"][0]]
                 pwr_anno.xy = pos
                 pwr_anno.set_text("Time {:.3f}s\nPower {:.0f}W".format(pos[0], pos[1]))
+                fig.canvas.draw_idle()
+            elif e_valid:
+                pos = eny_scat.get_offsets()[e_index["ind"][0]]
+                pwr_anno.xy = pos
+                pwr_anno.set_text("Time {:.3f}s\nEnergy {:.0f}J".format(pos[0], pos[1]))
                 fig.canvas.draw_idle()
 
     fig.canvas.mpl_connect("motion_notify_event", hover)
