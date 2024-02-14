@@ -57,6 +57,8 @@ Draws a graph of power, stroke rate etc
 import sys
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
+from matplotlib.widgets import SpanSelector
+import numpy as np
 from postprocess import scan_data
 
 if __name__ == '__main__' :
@@ -69,7 +71,7 @@ if __name__ == '__main__' :
     xtitle = 'Session: {}'.format(session)
 
     #fig, (rpm_axes, pwr_axes) = plt.subplots(2, sharex=True)
-    fig, pwr_axes = plt.subplots()
+    fig, (pwr_axes, zoom) = plt.subplots(2)
 
     # Flywheel
     #color = 'tab:green'
@@ -79,38 +81,85 @@ if __name__ == '__main__' :
     #rpm_axes.plot(x, y, color=color)
     #rpm_scat = rpm_axes.scatter(x, y, color=color, marker='.')
 
+    pwr_color = 'tab:orange'
+    eny_color = 'tab:blue'
+    pwra_color = 'tab:red'
+    pwrb_color = 'tab:green'
+    stk_color = 'tab:purple'
+    color = 'black'
+
     # Power
     pwr_axes.grid(visible=True)
 
-    color = 'black'
     pwr_axes.set_ylabel('Energy (joules)\nPower (watts)\nStroke Rate (dspm)', color=color)
-    color = 'tab:orange'
-    x, y = zip(*power)
-    pwr_axes.plot(x, y, color=color)
+    pwr_x, pwr_y = zip(*power)
+    pwr_axes.plot(pwr_x, pwr_y, color=pwr_color)
 
-    color = 'tab:blue'
-    x, y = zip(*energy)
-    pwr_axes.plot(x, y, color=color)
-    eny_scat = pwr_axes.scatter(x, y, color=color, marker='.')
+    eny_x, eny_y = zip(*energy)
+    pwr_axes.plot(eny_x, eny_y, color=eny_color)
 
-    color = 'tab:red'
-    x, y = zip(*power_a)
-    pwr_axes.plot(x, y, color=color)
-    pwra_scat = pwr_axes.scatter(x, y, color=color, marker='.')
+    pwra_x, pwra_y = zip(*power_a)
+    pwr_axes.plot(pwra_x, pwra_y, color=pwra_color)
 
-    color = 'tab:green'
-    x, y = zip(*power_b)
-    pwr_axes.plot(x, y, color=color)
-    pwrb_scat = pwr_axes.scatter(x, y, color=color, marker='.')
+    pwrb_x, pwrb_y = zip(*power_b)
+    pwr_axes.plot(pwrb_x, pwrb_y, color=pwrb_color)
 
-    # Stroke rate
-    color = 'tab:purple'
-    x, y = zip(*stroke)
-    pwr_axes.plot(x, y, color=color)
+    stk_x, stk_y = zip(*stroke)
+    pwr_axes.plot(stk_x, stk_y, color=stk_color)
+
+    #eny_scat = pwr_axes.scatter(eny_x, eny_y, color=eny_color, marker='.')
+    #pwra_scat = pwr_axes.scatter(pwra_x, pwra_y, color=pwra_color, marker='.')
+    #pwrb_scat = pwr_axes.scatter(pwrb_x, pwrb_y, color=pwrb_color, marker='.')
 
     #rpm_axes.set_title(xtitle)
     pwr_axes.set_xlabel(xlabel)
 
+    zoom_eny,  = zoom.plot([], [])
+    zoom_pwra, = zoom.plot([], [])
+    zoom_pwrb, = zoom.plot([], [])
+
+    def onselect(xmin, xmax):
+
+        indmin, indmax = np.searchsorted(eny_x, (xmin, xmax))
+        indmax = min(len(eny_x) - 1, indmax)
+
+        eny_region_x = eny_x[indmin:indmax]
+        eny_region_y = eny_y[indmin:indmax]
+
+        indmin, indmax = np.searchsorted(pwra_x, (xmin, xmax))
+        indmax = min(len(eny_x) - 1, indmax)
+
+        pwra_region_x = pwra_x[indmin:indmax]
+        pwra_region_y = pwra_y[indmin:indmax]
+
+        indmin, indmax = np.searchsorted(pwrb_x, (xmin, xmax))
+        indmax = min(len(eny_x) - 1, indmax)
+
+        pwrb_region_x = pwrb_x[indmin:indmax]
+        pwrb_region_y = pwrb_y[indmin:indmax]
+
+        if len(eny_region_x) >= 2:
+            zoom_eny.set_data(eny_region_x, eny_region_y)
+            zoom_pwra.set_data(pwra_region_x, pwra_region_y)
+            zoom_pwrb.set_data(pwrb_region_x, pwrb_region_y)
+
+            eny_scat  = zoom.scatter(eny_region_x, eny_region_y, color=eny_color, marker='.')
+            pwra_scat = zoom.scatter(pwra_region_x, pwra_region_y, color=pwra_color, marker='.')
+            pwrb_scat = zoom.scatter(pwrb_region_x, pwrb_region_y, color=pwrb_color, marker='.')
+
+            zoom.set_xlim(eny_region_x[0], eny_region_x[-1])
+            #zoom.set_ylim(region_y.min(), region_y.max())
+            zoom.set_ylim(0, 400)
+            fig.canvas.draw_idle()
+
+    span = SpanSelector(
+        pwr_axes,
+        onselect,
+        "horizontal",
+        useblit=True,
+        props=dict(alpha=0.5, facecolor="tab:blue"),
+        interactive=True,
+        drag_from_anywhere=True)
     # ANNOTATION START - comment out between START and END for simple plot
     # create object for speed xy scatter because this can be queried and annotated
 
@@ -140,7 +189,8 @@ if __name__ == '__main__' :
     #            rpm_anno.set_text("Time {:02d}:{:02d}\nTacho {:.0f}rpm".format(minutes, seconds, pos[1]))
     #            fig.canvas.draw_idle()
 
-        if event.inaxes == pwr_axes:
+        #if event.inaxes == pwr_axes:
+        if event.inaxes == zoom:
             a_valid, a_index = pwra_scat.contains(event)
             b_valid, b_index = pwrb_scat.contains(event)
             e_valid, e_index = eny_scat.contains(event)
@@ -162,7 +212,9 @@ if __name__ == '__main__' :
                 fig.canvas.draw_idle()
 
     fig.canvas.mpl_connect("motion_notify_event", hover)
+
     # ANNOTATION END
+
 
     plt.tight_layout()
     plt.show()
