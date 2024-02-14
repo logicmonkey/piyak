@@ -67,20 +67,7 @@ if __name__ == '__main__' :
 
     energy, rpm, power, stroke, power_a, power_b = scan_data(session)
 
-    xlabel = 'Time (seconds)'
-    xtitle = 'Session: {}'.format(session)
-
-    #fig, (rpm_axes, pwr_axes) = plt.subplots(2, sharex=True)
-    fig, (pwr_axes, zoom) = plt.subplots(2)
-
-    # Flywheel
-    #color = 'tab:green'
-    #rpm_axes.grid(visible=True)
-    #rpm_axes.set_ylabel('Flywheel\n(rpm)', color=color)
-    #x, y = zip(*rpm)
-    #rpm_axes.plot(x, y, color=color)
-    #rpm_scat = rpm_axes.scatter(x, y, color=color, marker='.')
-
+    rpm_color  = 'tab:green'
     pwr_color  = 'tab:orange'
     eny_color  = 'tab:blue'
     pwra_color = 'tab:red'
@@ -88,39 +75,94 @@ if __name__ == '__main__' :
     stk_color  = 'tab:purple'
     color      = 'black'
 
+    #fig, (rpm_ax, world_ax, zoom_ax) = plt.subplots(3, sharex=True)
+    fig, (world_ax, zoom_ax) = plt.subplots(2)
+
+    world_ax.set_title('Session: {}'.format(session))
+    zoom_ax.set_xlabel('Time (seconds)')
+
+    # Flywheel
+    #rpm_ax.grid(visible=True)
+    #rpm_ax.set_ylabel('Flywheel\n(rpm)', color=rpm_color)
+    #rpm_x, rpm_y = zip(*rpm)
+    #rpm_ax.plot(rpm_x, rpm_y, color=rpm_color)
+    #rpm_scat = rpm_ax.scatter(rpm_x, rpm_y, color=rpm_color, marker='.')
+
     # Power
-    pwr_axes.grid(visible=True)
+    world_ax.grid(visible=True)
 
-    pwr_axes.set_ylabel('Energy (joules)\nPower (watts)\nStroke Rate (dspm)', color=color)
+    world_ax.set_ylabel('Flywheel Energy (joules)\nPower (watts)\nStroke Rate (dspm)', color=color)
+    zoom_ax.set_ylabel('Flywheel Energy (joules)\nPower (watts))', color=color)
 
-    pwr_x, pwr_y   = zip(*power)
-    eny_x, eny_y   = zip(*energy)
+    pwr_x , pwr_y  = zip(*power)
+    eny_x,  eny_y  = zip(*energy)
     pwra_x, pwra_y = zip(*power_a)
     pwrb_x, pwrb_y = zip(*power_b)
-    stk_x, stk_y   = zip(*stroke)
+    stk_x,  stk_y  = zip(*stroke)
 
-    pwr_axes.plot(eny_x,  eny_y,  color=eny_color)
-    pwr_axes.plot(pwra_x, pwra_y, color=pwra_color)
-    pwr_axes.plot(pwrb_x, pwrb_y, color=pwrb_color)
-    pwr_axes.plot(pwr_x,  pwr_y,  color=pwr_color)
-    pwr_axes.plot(stk_x,  stk_y,  color=stk_color)
+    world_ax.plot(eny_x,  eny_y,  color=eny_color)
+    world_ax.plot(pwra_x, pwra_y, color=pwra_color)
+    world_ax.plot(pwrb_x, pwrb_y, color=pwrb_color)
+    world_ax.plot(pwr_x,  pwr_y,  color=pwr_color)
+    world_ax.plot(stk_x,  stk_y,  color=stk_color)
 
-    #eny_scat  = pwr_axes.scatter(eny_x,  eny_y,  color=eny_color,  marker='.')
-    #pwra_scat = pwr_axes.scatter(pwra_x, pwra_y, color=pwra_color, marker='.')
-    #pwrb_scat = pwr_axes.scatter(pwrb_x, pwrb_y, color=pwrb_color, marker='.')
+    zoom_eny,  = zoom_ax.plot([], [], color=eny_color)
+    zoom_pwra, = zoom_ax.plot([], [], color=pwra_color)
+    zoom_pwrb, = zoom_ax.plot([], [], color=pwrb_color)
 
-    #rpm_axes.set_title(xtitle)
-    pwr_axes.set_xlabel(xlabel)
+    eny_scat  = zoom_ax.scatter([], [], color=eny_color,  marker='.')
+    pwra_scat = zoom_ax.scatter([], [], color=pwra_color, marker='.')
+    pwrb_scat = zoom_ax.scatter([], [], color=pwrb_color, marker='.')
 
-    zoom_eny,  = zoom.plot([], [])
-    zoom_pwra, = zoom.plot([], [])
-    zoom_pwrb, = zoom.plot([], [])
+    #rpm_anno = rpm_axes.annotate("",
+    #               xy=(0,0), xytext=(20,20),
+    #               textcoords="offset points",
+    #               bbox=dict(boxstyle="round", fc="w"),
+    #               arrowprops=dict(arrowstyle="->"))
+    #rpm_anno.set_visible(False)
 
-    eny_scat  = zoom.scatter([], [], color=eny_color,  marker='.')
-    pwra_scat = zoom.scatter([], [], color=pwra_color, marker='.')
-    pwrb_scat = zoom.scatter([], [], color=pwrb_color, marker='.')
+    anno = zoom_ax.annotate("",
+                xy=(0,0), xytext=(20,20),
+                textcoords="offset points",
+                bbox=dict(boxstyle="round", fc="w"),
+                arrowprops=dict(arrowstyle="->"))
 
-    def onselect(xmin, xmax):
+    anno.set_visible(False)
+
+    def hover(event):
+
+    #    if event.inaxes == rpm_axes:
+    #        r_valid, r_index = rpm_scat.contains(event)
+    #        rpm_anno.set_visible(r_valid)
+    #        if r_valid:
+    #            pos = rpm_scat.get_offsets()[r_index["ind"][0]]
+    #            rpm_anno.xy = pos
+    #            minutes, seconds = divmod(int(pos[0]), 60)
+    #            rpm_anno.set_text("Time {:02d}:{:02d}\nTacho {:.0f}rpm".format(minutes, seconds, pos[1]))
+    #            fig.canvas.draw_idle()
+
+        if event.inaxes == zoom_ax:
+            a_valid, a_index = pwra_scat.contains(event)
+            b_valid, b_index = pwrb_scat.contains(event)
+            e_valid, e_index = eny_scat.contains(event)
+            anno.set_visible(a_valid or b_valid or e_valid)
+            if a_valid:
+                pos = pwra_scat.get_offsets()[a_index["ind"][0]]
+                anno.xy = pos
+                anno.set_text("Stroke Power {:.0f}W\nTime {:.3f}s".format(pos[1], pos[0]))
+                fig.canvas.draw_idle()
+            elif b_valid:
+                pos = pwrb_scat.get_offsets()[b_index["ind"][0]]
+                anno.xy = pos
+                anno.set_text("Stroke Power {:.0f}W\nTime {:.3f}s".format(pos[1], pos[0]))
+                fig.canvas.draw_idle()
+            elif e_valid:
+                pos = eny_scat.get_offsets()[e_index["ind"][0]]
+                anno.xy = pos
+                anno.set_text("Flywheel Energy {:.0f}J\nTime {:.3f}s".format(pos[1], pos[0]))
+                fig.canvas.draw_idle()
+
+    def spanselect(xmin, xmax):
 
         indmin, indmax = np.searchsorted(eny_x, (xmin, xmax))
         indmax = min(len(eny_x) - 1, indmax)
@@ -145,76 +187,26 @@ if __name__ == '__main__' :
             zoom_pwra.set_data(pwra_region_x, pwra_region_y)
             zoom_pwrb.set_data(pwrb_region_x, pwrb_region_y)
 
-            eny_temp  = zoom.scatter(eny_region_x,  eny_region_y,  color=eny_color,  marker='.')
-            pwra_temp = zoom.scatter(pwra_region_x, pwra_region_y, color=pwra_color, marker='.')
-            pwrb_temp = zoom.scatter(pwrb_region_x, pwrb_region_y, color=pwrb_color, marker='.')
+            eny_temp  = zoom_ax.scatter(eny_region_x,  eny_region_y )
+            pwra_temp = zoom_ax.scatter(pwra_region_x, pwra_region_y)
+            pwrb_temp = zoom_ax.scatter(pwrb_region_x, pwrb_region_y)
 
             eny_scat.set_offsets(eny_temp.get_offsets())
             pwra_scat.set_offsets(pwra_temp.get_offsets())
             pwrb_scat.set_offsets(pwrb_temp.get_offsets())
 
-            zoom.set_xlim(eny_region_x[0], eny_region_x[-1])
-            #zoom.set_ylim(region_y.min(), region_y.max())
-            zoom.set_ylim(0, 400)
+            zoom_ax.set_xlim(eny_region_x[0], eny_region_x[-1])
+            zoom_ax.set_ylim(0, max(eny_region_y))
             fig.canvas.draw_idle()
 
     span = SpanSelector(
-        pwr_axes,
-        onselect,
+        world_ax,
+        spanselect,
         "horizontal",
         useblit=True,
         props=dict(alpha=0.5, facecolor="tab:blue"),
         interactive=True,
         drag_from_anywhere=True)
-
-
-    #rpm_anno = rpm_axes.annotate("",
-    #               xy=(0,0), xytext=(20,20),
-    #               textcoords="offset points",
-    #               bbox=dict(boxstyle="round", fc="w"),
-    #               arrowprops=dict(arrowstyle="->"))
-    pwr_anno = zoom.annotate("",
-                   xy=(0,0), xytext=(20,20),
-                   textcoords="offset points",
-                   bbox=dict(boxstyle="round", fc="w"),
-                   arrowprops=dict(arrowstyle="->"))
-
-    #rpm_anno.set_visible(False)
-    pwr_anno.set_visible(False)
-
-    def hover(event):
-
-    #    if event.inaxes == rpm_axes:
-    #        r_valid, r_index = rpm_scat.contains(event)
-    #        rpm_anno.set_visible(r_valid)
-    #        if r_valid:
-    #            pos = rpm_scat.get_offsets()[r_index["ind"][0]]
-    #            rpm_anno.xy = pos
-    #            minutes, seconds = divmod(int(pos[0]), 60)
-    #            rpm_anno.set_text("Time {:02d}:{:02d}\nTacho {:.0f}rpm".format(minutes, seconds, pos[1]))
-    #            fig.canvas.draw_idle()
-
-        #if event.inaxes == pwr_axes:
-        if event.inaxes == zoom:
-            a_valid, a_index = pwra_scat.contains(event)
-            b_valid, b_index = pwrb_scat.contains(event)
-            e_valid, e_index = eny_scat.contains(event)
-            pwr_anno.set_visible(a_valid or b_valid or e_valid)
-            if a_valid:
-                pos = pwra_scat.get_offsets()[a_index["ind"][0]]
-                pwr_anno.xy = pos
-                pwr_anno.set_text("Time {:.3f}s\nPower {:.0f}W".format(pos[0], pos[1]))
-                fig.canvas.draw_idle()
-            elif b_valid:
-                pos = pwrb_scat.get_offsets()[b_index["ind"][0]]
-                pwr_anno.xy = pos
-                pwr_anno.set_text("Time {:.3f}s\nPower {:.0f}W".format(pos[0], pos[1]))
-                fig.canvas.draw_idle()
-            elif e_valid:
-                pos = eny_scat.get_offsets()[e_index["ind"][0]]
-                pwr_anno.xy = pos
-                pwr_anno.set_text("Time {:.3f}s\nEnergy {:.0f}J".format(pos[0], pos[1]))
-                fig.canvas.draw_idle()
 
     fig.canvas.mpl_connect("motion_notify_event", hover)
 
