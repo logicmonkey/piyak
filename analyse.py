@@ -196,7 +196,7 @@ if __name__ == '__main__' :
             pwrb_scat.set_offsets(pwrb_temp.get_offsets())
 
             zoom_ax.set_xlim(eny_region_x[0], eny_region_x[-1])
-            zoom_ax.set_ylim(0, max(eny_region_y))
+            zoom_ax.set_ylim(0, (((max(eny_region_y)/50)+1)*50))
             fig.canvas.draw_idle()
 
     span = SpanSelector(
