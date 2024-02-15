@@ -54,27 +54,44 @@ Draws a graph of power, stroke rate etc
     analyse.py <dat/activitydate>.dat
 '''
 
-import sys
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.widgets import SpanSelector
 import numpy as np
 from postprocess import scan_data
+import argparse
 
 if __name__ == '__main__' :
 
-    session = sys.argv[1]
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--input",   type=str, help="Input session datestamp")
+    parser.add_argument("-a", '--all',     action="store_true", help="Show all")
+    parser.add_argument("-c", '--compact', action="store_true", help="Compact view (no RPM)")
+    parser.add_argument("-r", '--rpm',     action="store_true", help="Show flywheel RPM")
+    parser.add_argument("-p", '--power',   action="store_true", help="Show power")
+    parser.add_argument("-s", '--stroke',  action="store_true", help="Show stroke rate")
+    args = parser.parse_args()
 
-    SHOW_RPM = False
+    SHOW_RPM    = False
+    SHOW_POWER  = False
+    SHOW_POWERA = False
+    SHOW_POWERB = False
+    SHOW_STROKE = False
 
-    if len(sys.argv) == 3 and sys.argv[2] == '-rpm':
+    if (args.all or args.rpm) and not args.compact:
         SHOW_RPM = True
+    if args.all or args.compact or args.power:
+        SHOW_POWER  = True
+        SHOW_POWERA = True
+        SHOW_POWERB = True
+    if args.all or args.compact or args.stroke:
+        SHOW_STROKE = True
 
-    energy, rpm, power, stroke, power_a, power_b = scan_data(session)
+    energy, rpm, power, stroke, power_a, power_b = scan_data(args.input)
 
     rpm_color  = 'tab:green'
-    pwr_color  = 'tab:orange'
     eny_color  = 'tab:blue'
+    pwr_color  = 'tab:orange'
     pwra_color = 'tab:red'
     pwrb_color = 'tab:green'
     stk_color  = 'tab:purple'
@@ -85,34 +102,36 @@ if __name__ == '__main__' :
     else:
         fig, (world_ax, zoom_ax) = plt.subplots(2)
 
-    world_ax.set_title('Session: {}'.format(session))
-    zoom_ax.set_xlabel('Time (seconds)')
-
     # Power
     world_ax.grid(visible=True)
 
     world_ax.set_ylabel('Flywheel Energy (joules)\nPower (watts)\nStroke Rate (dspm)', color=color)
     zoom_ax.set_ylabel('Flywheel Energy (joules)\nPower (watts))', color=color)
 
-    pwr_x , pwr_y  = zip(*power)
     eny_x,  eny_y  = zip(*energy)
+    pwr_x , pwr_y  = zip(*power)
     pwra_x, pwra_y = zip(*power_a)
     pwrb_x, pwrb_y = zip(*power_b)
     stk_x,  stk_y  = zip(*stroke)
 
     world_ax.plot(eny_x,  eny_y,  color=eny_color)
-    world_ax.plot(pwra_x, pwra_y, color=pwra_color)
-    world_ax.plot(pwrb_x, pwrb_y, color=pwrb_color)
-    world_ax.plot(pwr_x,  pwr_y,  color=pwr_color)
-    world_ax.plot(stk_x,  stk_y,  color=stk_color)
-
     zoom_eny,  = zoom_ax.plot([], [], color=eny_color)
-    zoom_pwra, = zoom_ax.plot([], [], color=pwra_color)
-    zoom_pwrb, = zoom_ax.plot([], [], color=pwrb_color)
+
+    if SHOW_POWER:
+        world_ax.plot(pwra_x, pwra_y, color=pwra_color)
+        world_ax.plot(pwrb_x, pwrb_y, color=pwrb_color)
+        world_ax.plot(pwr_x,  pwr_y,  color=pwr_color)
+        zoom_pwra, = zoom_ax.plot([], [], color=pwra_color)
+        zoom_pwrb, = zoom_ax.plot([], [], color=pwrb_color)
+
+    if SHOW_STROKE:
+        world_ax.plot(stk_x,  stk_y,  color=stk_color)
 
     eny_scat  = zoom_ax.scatter([], [], color=eny_color,  marker='.')
-    pwra_scat = zoom_ax.scatter([], [], color=pwra_color, marker='.')
-    pwrb_scat = zoom_ax.scatter([], [], color=pwrb_color, marker='.')
+
+    if SHOW_POWER:
+        pwra_scat = zoom_ax.scatter([], [], color=pwra_color, marker='.')
+        pwrb_scat = zoom_ax.scatter([], [], color=pwrb_color, marker='.')
 
     anno = zoom_ax.annotate("",
                 xy=(0,0), xytext=(20,20),
@@ -125,16 +144,22 @@ if __name__ == '__main__' :
     def hover(event):
 
         if event.inaxes == zoom_ax:
-            a_valid, a_index = pwra_scat.contains(event)
-            b_valid, b_index = pwrb_scat.contains(event)
             e_valid, e_index = eny_scat.contains(event)
+            a_valid = False
+            b_valid = False
+
+            if SHOW_POWER:
+                a_valid, a_index = pwra_scat.contains(event)
+                b_valid, b_index = pwrb_scat.contains(event)
+
             anno.set_visible(a_valid or b_valid or e_valid)
-            if a_valid:
+
+            if SHOW_POWER and a_valid:
                 pos = pwra_scat.get_offsets()[a_index["ind"][0]]
                 anno.xy = pos
                 anno.set_text("Stroke Power {:.0f}W\nTime {:.3f}s".format(pos[1], pos[0]))
                 fig.canvas.draw_idle()
-            elif b_valid:
+            elif SHOW_POWER and b_valid:
                 pos = pwrb_scat.get_offsets()[b_index["ind"][0]]
                 anno.xy = pos
                 anno.set_text("Stroke Power {:.0f}W\nTime {:.3f}s".format(pos[1], pos[0]))
@@ -153,30 +178,34 @@ if __name__ == '__main__' :
         eny_region_x = eny_x[indmin:indmax]
         eny_region_y = eny_y[indmin:indmax]
 
-        indmin, indmax = np.searchsorted(pwra_x, (xmin, xmax))
-        indmax = min(len(eny_x) - 1, indmax)
+        if SHOW_POWER:
+            indmin, indmax = np.searchsorted(pwra_x, (xmin, xmax))
+            indmax = min(len(eny_x) - 1, indmax)
 
-        pwra_region_x = pwra_x[indmin:indmax]
-        pwra_region_y = pwra_y[indmin:indmax]
+            pwra_region_x = pwra_x[indmin:indmax]
+            pwra_region_y = pwra_y[indmin:indmax]
 
-        indmin, indmax = np.searchsorted(pwrb_x, (xmin, xmax))
-        indmax = min(len(eny_x) - 1, indmax)
+            indmin, indmax = np.searchsorted(pwrb_x, (xmin, xmax))
+            indmax = min(len(eny_x) - 1, indmax)
 
-        pwrb_region_x = pwrb_x[indmin:indmax]
-        pwrb_region_y = pwrb_y[indmin:indmax]
+            pwrb_region_x = pwrb_x[indmin:indmax]
+            pwrb_region_y = pwrb_y[indmin:indmax]
 
         if len(eny_region_x) >= 2:
             zoom_eny.set_data(eny_region_x, eny_region_y)
-            zoom_pwra.set_data(pwra_region_x, pwra_region_y)
-            zoom_pwrb.set_data(pwrb_region_x, pwrb_region_y)
+            if SHOW_POWER:
+                zoom_pwra.set_data(pwra_region_x, pwra_region_y)
+                zoom_pwrb.set_data(pwrb_region_x, pwrb_region_y)
 
-            eny_temp  = zoom_ax.scatter(eny_region_x,  eny_region_y )
-            pwra_temp = zoom_ax.scatter(pwra_region_x, pwra_region_y)
-            pwrb_temp = zoom_ax.scatter(pwrb_region_x, pwrb_region_y)
+            eny_temp  = zoom_ax.scatter(eny_region_x,  eny_region_y)
+            if SHOW_POWER:
+                pwra_temp = zoom_ax.scatter(pwra_region_x, pwra_region_y)
+                pwrb_temp = zoom_ax.scatter(pwrb_region_x, pwrb_region_y)
 
             eny_scat.set_offsets(eny_temp.get_offsets())
-            pwra_scat.set_offsets(pwra_temp.get_offsets())
-            pwrb_scat.set_offsets(pwrb_temp.get_offsets())
+            if SHOW_POWER:
+                pwra_scat.set_offsets(pwra_temp.get_offsets())
+                pwrb_scat.set_offsets(pwrb_temp.get_offsets())
 
             zoom_ax.set_xlim(eny_region_x[0], eny_region_x[-1])
             zoom_ax.set_ylim(0, (((max(eny_region_y)/50)+1)*50))
@@ -191,13 +220,25 @@ if __name__ == '__main__' :
         interactive=True,
         drag_from_anywhere=True)
 
+    # Flywheel
     if SHOW_RPM:
-        # Flywheel
         rpm_ax.grid(visible=True)
         rpm_ax.set_ylabel('Flywheel\n(rpm)', color=rpm_color)
         rpm_x, rpm_y = zip(*rpm)
         rpm_ax.plot(rpm_x, rpm_y, color=rpm_color)
         rpm_scat = rpm_ax.scatter(rpm_x, rpm_y, color=rpm_color, marker='.')
+
+    summary_hours = (pwr_x[-1] - pwr_x[0])/(60.*60.)
+    summary_pwr_avg = sum(pwr_y)/len(pwr_y)
+
+    world_ax.set_title('Session: {}'.format(args.input))
+    world_ax.set_xlabel("Duration: {:.2f}h, Power: {:.1f}W, Intensity: {:.1f}W/h, Volume: {:.1f}Wh".format(
+                            summary_hours,
+                            summary_pwr_avg,
+                            summary_pwr_avg/summary_hours,
+                            summary_pwr_avg*summary_hours))
+
+    zoom_ax.set_xlabel('Time (seconds)')
 
     fig.canvas.mpl_connect("motion_notify_event", hover)
 
