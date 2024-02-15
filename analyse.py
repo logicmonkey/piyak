@@ -204,20 +204,22 @@ if __name__ == '__main__' :
             pwrb_region_x = pwrb_x[indmin:indmax]
             pwrb_region_y = pwrb_y[indmin:indmax]
 
-        if len(eny_region_x) >= 2:
+        if len(eny_region_x) > 1:
             zoom_eny.set_data(eny_region_x, eny_region_y)
-            zoom_pwr.set_data(pwr_region_x, pwr_region_y)
-            if SHOW_POWER:
+
+            eny_temp  = zoom_ax.scatter(eny_region_x, eny_region_y)
+            eny_scat.set_offsets(eny_temp.get_offsets())
+
+            if len(pwr_region_x) > 1:
+                zoom_pwr.set_data(pwr_region_x, pwr_region_y)
+
+            if SHOW_POWER and len(pwra_region_x) > 1 and len(pwrb_region_x) > 1:
                 zoom_pwra.set_data(pwra_region_x, pwra_region_y)
                 zoom_pwrb.set_data(pwrb_region_x, pwrb_region_y)
 
-            eny_temp  = zoom_ax.scatter(eny_region_x,  eny_region_y)
-            if SHOW_POWER:
                 pwra_temp = zoom_ax.scatter(pwra_region_x, pwra_region_y)
                 pwrb_temp = zoom_ax.scatter(pwrb_region_x, pwrb_region_y)
 
-            eny_scat.set_offsets(eny_temp.get_offsets())
-            if SHOW_POWER:
                 pwra_scat.set_offsets(pwra_temp.get_offsets())
                 pwrb_scat.set_offsets(pwrb_temp.get_offsets())
 
