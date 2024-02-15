@@ -70,6 +70,7 @@ if __name__ == '__main__' :
     parser.add_argument("-r", '--rpm',     action="store_true", help="Show flywheel RPM")
     parser.add_argument("-p", '--power',   action="store_true", help="Show power")
     parser.add_argument("-s", '--stroke',  action="store_true", help="Show stroke rate")
+    parser.add_argument("-t", '--text',    action="store_true", help="Show summary text")
     args = parser.parse_args()
 
     SHOW_RPM    = False
@@ -77,15 +78,19 @@ if __name__ == '__main__' :
     SHOW_POWERA = False
     SHOW_POWERB = False
     SHOW_STROKE = False
+    SHOW_TEXT   = False
 
-    if (args.all or args.rpm) and not args.compact:
-        SHOW_RPM = True
-    if args.all or args.compact or args.power:
-        SHOW_POWER  = True
-        SHOW_POWERA = True
-        SHOW_POWERB = True
-    if args.all or args.compact or args.stroke:
-        SHOW_STROKE = True
+    if args.text:
+        SHOW_TEXT = True
+    else:
+        if (args.all or args.rpm) and not args.compact:
+            SHOW_RPM = True
+        if args.all or args.compact or args.power:
+            SHOW_POWER  = True
+            SHOW_POWERA = True
+            SHOW_POWERB = True
+        if args.all or args.compact or args.stroke:
+            SHOW_STROKE = True
 
     energy, rpm, power, stroke, power_a, power_b = scan_data(args.input)
 
@@ -204,20 +209,22 @@ if __name__ == '__main__' :
             pwrb_region_x = pwrb_x[indmin:indmax]
             pwrb_region_y = pwrb_y[indmin:indmax]
 
-        if len(eny_region_x) >= 2:
+        if len(eny_region_x) > 1:
             zoom_eny.set_data(eny_region_x, eny_region_y)
-            zoom_pwr.set_data(pwr_region_x, pwr_region_y)
-            if SHOW_POWER:
+
+            eny_temp  = zoom_ax.scatter(eny_region_x, eny_region_y)
+            eny_scat.set_offsets(eny_temp.get_offsets())
+
+            if len(pwr_region_x) > 1:
+                zoom_pwr.set_data(pwr_region_x, pwr_region_y)
+
+            if SHOW_POWER and len(pwra_region_x) > 1 and len(pwrb_region_x) > 1:
                 zoom_pwra.set_data(pwra_region_x, pwra_region_y)
                 zoom_pwrb.set_data(pwrb_region_x, pwrb_region_y)
 
-            eny_temp  = zoom_ax.scatter(eny_region_x,  eny_region_y)
-            if SHOW_POWER:
                 pwra_temp = zoom_ax.scatter(pwra_region_x, pwra_region_y)
                 pwrb_temp = zoom_ax.scatter(pwrb_region_x, pwrb_region_y)
 
-            eny_scat.set_offsets(eny_temp.get_offsets())
-            if SHOW_POWER:
                 pwra_scat.set_offsets(pwra_temp.get_offsets())
                 pwrb_scat.set_offsets(pwrb_temp.get_offsets())
 
@@ -257,4 +264,14 @@ if __name__ == '__main__' :
     fig.canvas.mpl_connect("motion_notify_event", hover)
 
     plt.tight_layout()
-    plt.show()
+
+    if SHOW_TEXT:
+        print("Session, Duration h, Power W, Intensity W/h, Volume Wh")
+        print("{}, {:.2f}, {:.1f}, {:.1f}, {:.1f}".format(
+                        args.input,
+                        summary_hours,
+                        summary_pwr_avg,
+                        summary_pwr_avg/summary_hours,
+                        summary_pwr_avg*summary_hours))
+    else:
+        plt.show()
