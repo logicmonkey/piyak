@@ -121,6 +121,7 @@ if __name__ == '__main__' :
         world_ax.plot(pwra_x, pwra_y, color=pwra_color)
         world_ax.plot(pwrb_x, pwrb_y, color=pwrb_color)
         world_ax.plot(pwr_x,  pwr_y,  color=pwr_color)
+        zoom_pwr,  = zoom_ax.plot([], [], color=pwr_color)
         zoom_pwra, = zoom_ax.plot([], [], color=pwra_color)
         zoom_pwrb, = zoom_ax.plot([], [], color=pwrb_color)
 
@@ -178,6 +179,18 @@ if __name__ == '__main__' :
         eny_region_x = eny_x[indmin:indmax]
         eny_region_y = eny_y[indmin:indmax]
 
+        indmin, indmax = np.searchsorted(pwr_x, (xmin, xmax))
+        indmax = min(len(eny_x) - 1, indmax)
+
+        pwr_region_x = pwr_x[indmin:indmax]
+        pwr_region_y = pwr_y[indmin:indmax]
+
+        zoom_seconds = (pwr_region_x[-1] - pwr_region_x[0])
+        zoom_pwr_avg = sum(pwr_region_y)/len(pwr_region_y)
+
+        zoom_ax.set_xlabel("Duration: {:.1f}s, Power: {:.1f}W".format(
+                            zoom_seconds,
+                            zoom_pwr_avg))
         if SHOW_POWER:
             indmin, indmax = np.searchsorted(pwra_x, (xmin, xmax))
             indmax = min(len(eny_x) - 1, indmax)
@@ -193,6 +206,7 @@ if __name__ == '__main__' :
 
         if len(eny_region_x) >= 2:
             zoom_eny.set_data(eny_region_x, eny_region_y)
+            zoom_pwr.set_data(pwr_region_x, pwr_region_y)
             if SHOW_POWER:
                 zoom_pwra.set_data(pwra_region_x, pwra_region_y)
                 zoom_pwrb.set_data(pwrb_region_x, pwrb_region_y)
@@ -233,10 +247,10 @@ if __name__ == '__main__' :
 
     world_ax.set_title('Session: {}'.format(args.input))
     world_ax.set_xlabel("Duration: {:.2f}h, Power: {:.1f}W, Intensity: {:.1f}W/h, Volume: {:.1f}Wh".format(
-                            summary_hours,
-                            summary_pwr_avg,
-                            summary_pwr_avg/summary_hours,
-                            summary_pwr_avg*summary_hours))
+                        summary_hours,
+                        summary_pwr_avg,
+                        summary_pwr_avg/summary_hours,
+                        summary_pwr_avg*summary_hours))
 
     zoom_ax.set_xlabel('Time (seconds)')
 
