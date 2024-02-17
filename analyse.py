@@ -70,6 +70,7 @@ if __name__ == '__main__' :
     parser.add_argument("-r", '--rpm',     action="store_true", help="Show flywheel RPM")
     parser.add_argument("-p", '--power',   action="store_true", help="Show power")
     parser.add_argument("-s", '--stroke',  action="store_true", help="Show stroke rate")
+    parser.add_argument("-t", '--text',    action="store_true", help="Show summary text")
     args = parser.parse_args()
 
     SHOW_RPM    = False
@@ -77,15 +78,19 @@ if __name__ == '__main__' :
     SHOW_POWERA = False
     SHOW_POWERB = False
     SHOW_STROKE = False
+    SHOW_TEXT   = False
 
-    if (args.all or args.rpm) and not args.compact:
-        SHOW_RPM = True
-    if args.all or args.compact or args.power:
-        SHOW_POWER  = True
-        SHOW_POWERA = True
-        SHOW_POWERB = True
-    if args.all or args.compact or args.stroke:
-        SHOW_STROKE = True
+    if args.text:
+        SHOW_TEXT = True
+    else:
+        if (args.all or args.rpm) and not args.compact:
+            SHOW_RPM = True
+        if args.all or args.compact or args.power:
+            SHOW_POWER  = True
+            SHOW_POWERA = True
+            SHOW_POWERB = True
+        if args.all or args.compact or args.stroke:
+            SHOW_STROKE = True
 
     energy, rpm, power, stroke, power_a, power_b = scan_data(args.input)
 
@@ -259,4 +264,14 @@ if __name__ == '__main__' :
     fig.canvas.mpl_connect("motion_notify_event", hover)
 
     plt.tight_layout()
-    plt.show()
+
+    if SHOW_TEXT:
+        print("Session, Duration h, Power W, Intensity W/h, Volume Wh")
+        print("{}, {:.2f}, {:.1f}, {:.1f}, {:.1f}".format(
+                        args.input,
+                        summary_hours,
+                        summary_pwr_avg,
+                        summary_pwr_avg/summary_hours,
+                        summary_pwr_avg*summary_hours))
+    else:
+        plt.show()
