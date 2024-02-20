@@ -350,22 +350,22 @@ class Piyak(BoxLayout):
 
             x, y = zip(*rpm)
             rpm_dots, = rpm_axes.plot(x, y, 'green', marker='.', label='samples')
-            rpm_axes.grid(b=True)
+            rpm_axes.grid(visible=True)
             rpm_axes.set_ylabel(rpm_label)
 
             x, y = zip(*energy)
             eny_line, = eny_axes.plot(x, y, 'blue', label='line')
-            eny_axes.grid(b=True)
+            eny_axes.grid(visible=True)
             eny_axes.set_ylabel(eny_label)
 
             x, y = zip(*power)
             pwr_axes.plot(x, y, color='orange')
-            pwr_axes.grid(b=True)
+            pwr_axes.grid(visible=True)
             pwr_axes.set_ylabel(pwr_label)
 
             x, y = zip(*stroke)
             stk_axes.plot(x, y, color='gray')
-            stk_axes.grid(b=True)
+            stk_axes.grid(visible=True)
             stk_axes.set_ylabel(stk_label)
 
             rpm_axes.set_title(xtitle)
