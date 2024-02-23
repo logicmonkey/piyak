@@ -118,7 +118,8 @@ class Piyak(BoxLayout):
         self.rot_ke_max     = 0.0                       # power calc requires a maximum...
         self.rot_ke_min     = deque([0.0]*2, 2)         # ...and two minima
         self.stroke         = deque([dtn]*2, 2)
-        self.power          = deque([0]*4, 4)
+        self.energy_samp    = deque([0]*4, 4)
+        self.stroke_samp    = deque([0]*4, 4)
         self.stroke_rate    = deque([0]*4, 4)
 
         # course progress tracking
@@ -239,9 +240,12 @@ class Piyak(BoxLayout):
 
                 # stroke rate is 1 minute divided by the non-zero stroke period
                 if stroke_timedelta != timedelta(0):
-                    self.power.append(energy_in/stroke_period)
+
+                    self.energy_samp.append(energy_in)
+                    self.stroke_samp.append(stroke_period)
+                    self.ids.i_power.text = '[b]{:.0f}[/b]W'.format(sum(self.energy_samp)/sum(self.stroke_samp))
+
                     self.stroke_rate.append(30.0/stroke_period)
-                    self.ids.i_power.text  = '[b]{:.0f}[/b]W'.format(sum(self.power)/self.power.maxlen)
                     self.ids.i_stroke.text = '[b]{:.0f}[/b]dspm'.format(sum(self.stroke_rate)/self.stroke_rate.maxlen)
 
                 # check progress along the track (course)
